@@ -1,4 +1,4 @@
-# Medical Appointment Management Application ![Medical Icon](https://img.icons8.com/ios/50/000000/stethoscope.png)
+# QuickCare Application ![Medical Icon](https://img.icons8.com/ios/50/000000/stethoscope.png)
 
 This application facilitates the scheduling and management of medical appointments. It is designed to improve the efficiency and accessibility of medical services for both patients and healthcare providers.
 
