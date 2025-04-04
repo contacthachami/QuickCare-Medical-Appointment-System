@@ -45,7 +45,8 @@ Follow these steps to set up the project on your local machine.
 
 1. **Clone the repository:**
     ```sh
-    cd YM-Medical-Appointment
+    cd QuickCare
+
     ```
 
 2. **Install PHP dependencies:**
