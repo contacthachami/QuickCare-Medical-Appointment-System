@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Rating;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DoctorController extends Controller
 {
@@ -46,8 +47,34 @@ class DoctorController extends Controller
 
     public function appointments()
     {
-
-        $appointments = Auth::user()->doctor->Appointments;
+        // Get appointments using pagination
+        $doctor_id = Auth::user()->doctor->id;
+        
+        // Handle export requests
+        if (request()->has('travel') && request()->has('export')) {
+            $exportType = request()->get('export');
+            $doctorAppointments = Auth::user()->doctor->Appointments;
+            $completedAppointments = $doctorAppointments->filter(function($appointment) {
+                return $appointment->check_in_time && $appointment->check_out_time;
+            })->sortByDesc('appointment_date');
+            
+            if ($exportType === 'csv') {
+                return $this->exportTravelRecordsCSV($completedAppointments);
+            } elseif ($exportType === 'pdf') {
+                return $this->exportTravelRecordsPDF($completedAppointments);
+            }
+        }
+        
+        // Redirect to travel tracking page if travel parameter is present
+        if (request()->has('travel')) {
+            return $this->travelTracking();
+        }
+        
+        // Use paginate instead of get for appointments
+        $appointments = Appointment::where('doctor_id', $doctor_id)
+            ->orderBy('appointment_date', 'desc')
+            ->paginate(10);
+        
         return view('panels.doctor.appointments')->with(compact('appointments'));
     }
 
@@ -242,42 +269,61 @@ class DoctorController extends Controller
     {
         $user = Auth::user();
         $doctor = $user->doctor;
-
-        // Retrieve all schedules for the doctor with the given ID
-        $schedules = Schedule::where('doctor_id', $doctor->id)->get();
-
-        // Get the start and end of the current week
-        $startDate = Carbon::now()->startOfWeek();
-        $endDate = Carbon::now()->endOfWeek();
-
-        // Transform the schedule data into the format expected by FullCalendar
+        
+        // Retrieve all available schedules for the doctor
+        $schedules = Schedule::where('doctor_id', $doctor->id)
+            ->where('status', 'false')
+            ->get();
+            
+        // Transform schedules for use in the calendar
         $events = [];
         foreach ($schedules as $schedule) {
-            // Parse the start and end times for the current schedule
+            // Parse times for this specific schedule
             $startTime = Carbon::parse($schedule->start);
             $endTime = Carbon::parse($schedule->end);
-
-            // Get the current date (Monday) and iterate through each day of the week
-            $currentDate = clone $startDate;
-
-            while ($currentDate->lte($endDate)) {
-                // Check if the current date matches the schedule day
-                if ($currentDate->englishDayOfWeek == $schedule->day) {
-                    // Assign the schedule to the current day of the week
-                    $events[] = [
-                        'id' => $schedule->id,
-                        'title' => 'Available', // Customize as needed
-                        'start' => $currentDate->copy()->setTime($startTime->hour, $startTime->minute)->toDateTimeString(),
-                        'end' => $currentDate->copy()->setTime($endTime->hour, $endTime->minute)->toDateTimeString(),
-                    ];
+            
+            // Format times in a clean, readable format
+            $formattedStart = $startTime->format('g:i A');
+            $formattedEnd = $endTime->format('g:i A');
+            
+            // If this schedule has a specific date, use that
+            if ($schedule->specific_date) {
+                $eventDate = Carbon::parse($schedule->specific_date);
+                
+                $events[] = [
+                    'id' => $schedule->id,
+                    'title' => 'Available: ' . $formattedStart . ' - ' . $formattedEnd,
+                    'start' => $eventDate->copy()->setTime($startTime->hour, $startTime->minute)->toDateTimeString(),
+                    'end' => $eventDate->copy()->setTime($endTime->hour, $endTime->minute)->toDateTimeString(),
+                    'day' => $schedule->day
+                ];
+            } else {
+                // For recurring schedules, find the next few occurrences of this day of the week
+                $dayOfWeek = $schedule->day;
+                $startDate = Carbon::now()->startOfWeek();
+                $endDate = Carbon::now()->addWeeks(4)->endOfWeek(); // Show 4 weeks of recurring schedules
+                
+                $currentDate = clone $startDate;
+                
+                while ($currentDate->lte($endDate)) {
+                    // Check if the current date matches the schedule day
+                    if ($currentDate->englishDayOfWeek == $dayOfWeek) {
+                        // Create an event for this recurring schedule on this matching date
+                        $events[] = [
+                            'id' => $schedule->id,
+                            'title' => 'Available: ' . $formattedStart . ' - ' . $formattedEnd,
+                            'start' => $currentDate->copy()->setTime($startTime->hour, $startTime->minute)->toDateTimeString(),
+                            'end' => $currentDate->copy()->setTime($endTime->hour, $endTime->minute)->toDateTimeString(),
+                            'day' => $dayOfWeek
+                        ];
+                    }
+                    
+                    // Move to the next day
+                    $currentDate->addDay();
                 }
-
-                // Move to the next day
-                $currentDate->addDay();
             }
         }
-
-        // Return the events as a JSON response
+        
         return response()->json($events);
     }
 
@@ -289,6 +335,8 @@ class DoctorController extends Controller
                 'start_times' => 'nullable|array', // Validate 'start_times' as array
                 'start_times.*' => 'nullable|array', // Each item inside 'start_times' should be an array
                 'start_times.*.*' => 'nullable|date_format:H:i', // Validate as time format (HH:MM)
+                'specific_date' => 'nullable|array', // Validate specific_date as array
+                'specific_date.*' => 'nullable|date', // Each specific date should be a valid date
             ]);
 
             // Check if 'start_times' is empty
@@ -299,18 +347,33 @@ class DoctorController extends Controller
             // Iterate through the submitted data and store in the database
             foreach ($validatedData['start_times'] as $day => $startTimes) {
                 if ($startTimes) { // Check if there are start times for this day
+                    // Get the specific date for this day if provided
+                    $specificDate = isset($validatedData['specific_date'][$day]) ? $validatedData['specific_date'][$day] : null;
+                    
                     foreach ($startTimes as $startTime) {
-                        // Check if there's an existing record with the same doctor_id, day, and start time
-                        $existingSchedule = Schedule::where('doctor_id', $id)
+                        // Check if there's an existing record with the same doctor_id, day, start time, and specific date
+                        $query = Schedule::where('doctor_id', $id)
                             ->where('day', ucfirst($day))
-                            ->where('start', $startTime)
-                            ->exists();
+                            ->where('start', $startTime);
+                            
+                        if ($specificDate) {
+                            $query->where('specific_date', $specificDate);
+                        } else {
+                            $query->whereNull('specific_date');
+                        }
+                        
+                        $existingSchedule = $query->exists();
 
                         // If there's no existing record, then insert the new schedule
                         if (!$existingSchedule) {
                             // Create a new Schedule instance
                             $schedule = new Schedule();
                             $schedule->start = $startTime;
+                            
+                            // Set the specific date if provided
+                            if ($specificDate) {
+                                $schedule->specific_date = $specificDate;
+                            }
 
                             // Set the end time to 30 minutes later than the start time
                             $schedule->end = date('H:i', strtotime('+30 minutes', strtotime($startTime)));
@@ -380,24 +443,33 @@ class DoctorController extends Controller
 
 
 
-    public function getAvailableHours(Request $request )
+    public function getAvailableHours(Request $request)
     {
         // Retrieve the date from the request
         $date = $request->input('date');
         $doctor_id = $request->input('doctor_id');
+        
         // Convert the date to day of the week (e.g., Monday, Tuesday)
         $dayOfWeek = Carbon::parse($date)->format('l');
 
         // Retrieve available hours for the selected date and day of the week
-        $availableHours = Schedule::where('day', $dayOfWeek)
-            ->where('doctor_id', $doctor_id)
+        $query = Schedule::where('doctor_id', $doctor_id)
             ->where('status', 'false')
-            ->select('id', 'start') // Selecting both ID and start time
-            ->get();
+            ->where(function($query) use ($date, $dayOfWeek) {
+                // Either match the day of week with no specific date
+                $query->where(function($q) use ($dayOfWeek) {
+                    $q->where('day', $dayOfWeek)
+                      ->whereNull('specific_date');
+                })
+                // OR match the specific date exactly
+                ->orWhere('specific_date', $date);
+            })
+            ->select('id', 'start'); // Selecting both ID and start time
+        
+        $availableHours = $query->get();
 
         // Return the available hours as JSON response
         return response()->json($availableHours);
-
     }
 
     public function getAppointments(Request $request)
@@ -412,17 +484,336 @@ class DoctorController extends Controller
 
         // Return appointments as JSON response
         return response()->json($appointments);
-
     }
 
 
     public function getAppointmentsForCalendar(Request $request)
     {
-        $doctor_id = Auth::user()->doctor->id;
-        $appointments = Appointment::where('doctor_id', $doctor_id)->get();
-        
-        return response()->json($appointments);
+        $appointments = Appointment::where('doctor_id', Auth::user()->doctor->id)->get();
+
+        $data = [];
+        foreach ($appointments as $appointment) {
+            $data[] = [
+                'id' => $appointment->id,
+                'title' => $appointment->patient->user->name,
+                'start' => $appointment->appointment_date,
+                'extendedProps' => [
+                    'patientName' => $appointment->patient->user->name,
+                    'appointmentDate' => $appointment->appointment_date,
+                    'reason' => $appointment->reason ?? 'Not specified',
+                    'doctorName' => $appointment->doctor->user->name,
+                ]
+            ];
+        }
+
+        return response()->json($data);
     }
 
+    public function checkIn(Request $request, $id)
+    {
+        $appointment = Appointment::find($id);
+        
+        if (!$appointment) {
+            return redirect()->back()->with('error', 'Appointment not found.');
+        }
+        
+        // Check if user is the doctor for this appointment
+        if ($appointment->doctor_id != Auth::user()->doctor->id) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+        
+        // Record check-in time
+        $appointment->check_in_time = now();
+        $appointment->save();
+        
+        return redirect()->back()->with('success', 'Check-in time recorded successfully.');
+    }
+    
+    public function checkOut(Request $request, $id)
+    {
+        $appointment = Appointment::find($id);
+        
+        if (!$appointment) {
+            return redirect()->back()->with('error', 'Appointment not found.');
+        }
+        
+        // Check if user is the doctor for this appointment
+        if ($appointment->doctor_id != Auth::user()->doctor->id) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+        
+        // Check if check-in was recorded
+        if (!$appointment->check_in_time) {
+            return redirect()->back()->with('error', 'Please check-in first.');
+        }
+        
+        // Record check-out time
+        $appointment->check_out_time = now();
+        
+        // Calculate travel time in minutes
+        $checkInTime = \Carbon\Carbon::parse($appointment->check_in_time);
+        $checkOutTime = \Carbon\Carbon::parse($appointment->check_out_time);
+        $travelTimeMinutes = $checkOutTime->diffInMinutes($checkInTime);
+        $appointment->travel_time_minutes = $travelTimeMinutes;
+        
+        $appointment->save();
+        
+        return redirect()->back()->with('success', 'Check-out time recorded. Travel time: ' . $travelTimeMinutes . ' minutes.');
+    }
+
+    /**
+     * Export travel records to CSV
+     */
+    private function exportTravelRecordsCSV($appointments)
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="travel_records_' . now()->format('Y-m-d') . '.csv"',
+        ];
+        
+        $callback = function() use ($appointments) {
+            $file = fopen('php://output', 'w');
+            
+            // Add CSV headers
+            fputcsv($file, [
+                'Date', 
+                'Patient Name', 
+                'Appointment Time', 
+                'Check-In Time', 
+                'Check-Out Time', 
+                'Travel Time (minutes)',
+                'Location'
+            ]);
+            
+            // Add CSV data
+            foreach ($appointments as $appointment) {
+                fputcsv($file, [
+                    Carbon::parse($appointment->appointment_date)->format('Y-m-d'),
+                    $appointment->patient->user->name,
+                    Carbon::parse($appointment->appointment_date)->format('h:i A'),
+                    Carbon::parse($appointment->check_in_time)->format('h:i A'),
+                    Carbon::parse($appointment->check_out_time)->format('h:i A'),
+                    $appointment->travel_time_minutes,
+                    $appointment->patient->user->address->ville . ', ' . $appointment->patient->user->address->rue
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+    
+    /**
+     * Export travel records to PDF
+     */
+    private function exportTravelRecordsPDF($appointments)
+    {
+        $data = [
+            'appointments' => $appointments,
+            'doctor' => Auth::user()->doctor,
+            'totalTime' => $appointments->sum('travel_time_minutes'),
+            'avgTime' => $appointments->count() > 0 ? round($appointments->sum('travel_time_minutes') / $appointments->count(), 1) : 0,
+            'exportDate' => now()->format('Y-m-d H:i:s')
+        ];
+        
+        $pdf = Pdf::loadView('exports.travel-records-pdf', $data);
+        
+        return $pdf->download('travel_records_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Display the dedicated travel tracking page
+     */
+    public function travelTracking()
+    {
+        // Get the doctor's ID
+        $doctor_id = Auth::user()->doctor->id;
+        
+        // Get paginated appointments for the travel history table
+        $appointments = Appointment::where('doctor_id', $doctor_id)
+            ->orderBy('appointment_date', 'desc')
+            ->paginate(10);
+        
+        // Get all appointments for calculations
+        $allAppointments = Auth::user()->doctor->Appointments;
+        
+        // Filter completed appointments (those with both check-in and check-out times)
+        $completedAppointments = $allAppointments->filter(function($appointment) {
+            return $appointment->check_in_time && $appointment->check_out_time;
+        })->sortByDesc('appointment_date');
+        
+        // Calculate total travel time in minutes
+        $totalTravelTime = $completedAppointments->sum('travel_time_minutes');
+        
+        // Calculate average travel time per appointment
+        $avgTravelTime = $completedAppointments->count() > 0 
+            ? round($totalTravelTime / $completedAppointments->count(), 1) 
+            : 0;
+        
+        // Count total completed trips
+        $totalTrips = $completedAppointments->count();
+        
+        // Calculate travel time for the last 7 days
+        $lastWeek = Carbon::now()->subDays(7);
+        $lastWeekAppointments = $completedAppointments->filter(function($appointment) use ($lastWeek) {
+            return Carbon::parse($appointment->appointment_date)->isAfter($lastWeek);
+        });
+        $lastWeekTravelTime = $lastWeekAppointments->sum('travel_time_minutes');
+        
+        // Get active appointment (currently traveling)
+        $activeAppointment = $allAppointments->first(function($appointment) {
+            return $appointment->check_in_time && !$appointment->check_out_time;
+        });
+        
+        // Rename to match the variable name in the view
+        $activeTravelAppointment = $activeAppointment;
+        
+        // Get today's appointments
+        $today = Carbon::today();
+        $todaysAppointments = $allAppointments->filter(function($appointment) use ($today) {
+            return Carbon::parse($appointment->appointment_date)->isSameDay($today);
+        })->sortBy('appointment_date');
+        
+        // Check if we have active appointments today
+        $hasActiveAppointments = $todaysAppointments->count() > 0;
+        
+        return view('panels.doctor.travel-tracking', compact(
+            'appointments',
+            'completedAppointments',
+            'totalTravelTime',
+            'avgTravelTime',
+            'totalTrips',
+            'lastWeekTravelTime',
+            'activeAppointment',
+            'activeTravelAppointment',
+            'todaysAppointments',
+            'hasActiveAppointments'
+        ));
+    }
+    
+    /**
+     * Export travel records in specified format
+     */
+    public function exportTravelRecords($format)
+    {
+        $appointments = Auth::user()->doctor->Appointments;
+        $completedAppointments = $appointments->filter(function($appointment) {
+            return $appointment->check_in_time && $appointment->check_out_time;
+        })->sortByDesc('appointment_date');
+        
+        if ($format === 'csv') {
+            return $this->exportTravelRecordsCSV($completedAppointments);
+        } elseif ($format === 'pdf') {
+            return $this->exportTravelRecordsPDF($completedAppointments);
+        } elseif ($format === 'excel') {
+            return $this->exportTravelRecordsExcel($completedAppointments);
+        }
+        
+        return redirect()->back()->with('error', 'Invalid export format');
+    }
+
+    /**
+     * Export travel records to Excel
+     */
+    private function exportTravelRecordsExcel($appointments)
+    {
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel',
+            'Content-Disposition' => 'attachment; filename="travel_records_' . now()->format('Y-m-d') . '.xlsx"',
+        ];
+        
+        // Using the same logic as CSV export for now
+        // In a real implementation, you would use a library like PhpSpreadsheet
+        $callback = function() use ($appointments) {
+            $file = fopen('php://output', 'w');
+            
+            // Add headers
+            fputcsv($file, [
+                'Date', 
+                'Patient Name', 
+                'Appointment Time', 
+                'Check-In Time', 
+                'Check-Out Time', 
+                'Travel Time (minutes)',
+                'Location'
+            ]);
+            
+            // Add data
+            foreach ($appointments as $appointment) {
+                fputcsv($file, [
+                    Carbon::parse($appointment->appointment_date)->format('Y-m-d'),
+                    $appointment->patient->user->name,
+                    Carbon::parse($appointment->appointment_date)->format('g:i A'),
+                    Carbon::parse($appointment->check_in_time)->format('g:i A'),
+                    Carbon::parse($appointment->check_out_time)->format('g:i A'),
+                    $appointment->travel_time_minutes,
+                    $appointment->patient->user->address->ville . ', ' . $appointment->patient->user->address->rue
+                ]);
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Get all available schedule slots for the calendar
+     */
+    public function getAllSchedulesForCalendar()
+    {
+        $user = Auth::user();
+        $doctor = $user->doctor;
+        
+        // Retrieve all available schedules for the doctor
+        $schedules = Schedule::where('doctor_id', $doctor->id)
+            ->where('status', 'false')
+            ->get();
+            
+        // Transform schedules for use in the calendar
+        $events = [];
+        foreach ($schedules as $schedule) {
+            // Parse times for this specific schedule
+            $startTime = Carbon::parse($schedule->start);
+            $endTime = Carbon::parse($schedule->end);
+            
+            // Format times in a clean, readable format
+            $formattedStart = $startTime->format('g:i A');
+            $formattedEnd = $endTime->format('g:i A');
+            
+            // If this schedule has a specific date, use that
+            if ($schedule->specific_date) {
+                $eventDate = Carbon::parse($schedule->specific_date);
+                
+                $events[] = [
+                    'id' => $schedule->id,
+                    'title' => 'Available: ' . $formattedStart . ' - ' . $formattedEnd,
+                    'start' => $eventDate->copy()->setTime($startTime->hour, $startTime->minute)->toDateTimeString(),
+                    'end' => $eventDate->copy()->setTime($endTime->hour, $endTime->minute)->toDateTimeString(),
+                    'day' => $schedule->day
+                ];
+            } else {
+                // For recurring schedules, find the next occurrence of this day of the week
+                $dayOfWeek = $schedule->day;
+                $nextDate = Carbon::now()->startOfDay();
+                
+                while ($nextDate->englishDayOfWeek !== $dayOfWeek) {
+                    $nextDate->addDay();
+                }
+                
+                // Create a single event for this specific schedule on the next matching date
+                $events[] = [
+                    'id' => $schedule->id,
+                    'title' => 'Available: ' . $formattedStart . ' - ' . $formattedEnd,
+                    'start' => $nextDate->copy()->setTime($startTime->hour, $startTime->minute)->toDateTimeString(),
+                    'end' => $nextDate->copy()->setTime($endTime->hour, $endTime->minute)->toDateTimeString(),
+                    'day' => $dayOfWeek
+                ];
+            }
+        }
+        
+        return response()->json($events);
+    }
 
 }

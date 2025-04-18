@@ -1,0 +1,382 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="850" viewBox="0 0 1000 850">
+  <style>
+    text {
+      font-family: 'Arial', sans-serif;
+      font-size: 14px;
+      fill: #333;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      fill: #2c3e50;
+    }
+    .subtitle {
+      font-size: 16px;
+      fill: #7f8c8d;
+    }
+    .service-node {
+      stroke-width: 2;
+      rx: 10;
+      ry: 10;
+    }
+    .service-text {
+      font-weight: bold;
+      fill: white;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .service-desc {
+      font-size: 12px;
+      fill: #555;
+      text-anchor: middle;
+    }
+    .service-desc-background {
+      fill: white;
+      opacity: 0.95;
+      rx: 8;
+      ry: 8;
+      stroke: #e0e0e0;
+      stroke-width: 1;
+    }
+    .database {
+      fill: #ecf0f1;
+      stroke: #bdc3c7;
+      stroke-width: 2;
+    }
+    .database-text {
+      font-size: 12px;
+      fill: #34495e;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .connection {
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+    .connection-label {
+      font-size: 10px;
+      fill: #7f8c8d;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .connection-label-bg {
+      fill: white;
+      opacity: 0.95;
+      rx: 6;
+      ry: 6;
+      stroke: #e0e0e0;
+      stroke-width: 0.5;
+    }
+    .dashed-connection {
+      stroke-width: 1.5;
+      fill: none;
+      stroke-dasharray: 5,5;
+      marker-end: url(#arrowhead);
+      opacity: 0.6;
+    }
+    .bidirectional {
+      marker-start: url(#arrowhead-start);
+      marker-end: url(#arrowhead);
+    }
+    @keyframes pulse {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+    .animate-pulse {
+      animation: pulse 3s infinite ease-in-out;
+    }
+    .security-badge {
+      fill: #e74c3c;
+      stroke: #c0392b;
+      stroke-width: 1;
+      rx: 5;
+      ry: 5;
+    }
+    .security-text {
+      font-size: 10px;
+      fill: white;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .legend-group {
+      opacity: 0.9;
+    }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#95a5a6"/>
+    </marker>
+    <marker id="arrowhead-start" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="10 0, 0 3.5, 10 7" fill="#95a5a6"/>
+    </marker>
+    <linearGradient id="gradient-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3498db" />
+      <stop offset="100%" stop-color="#2980b9" />
+    </linearGradient>
+    <linearGradient id="gradient-purple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9b59b6" />
+      <stop offset="100%" stop-color="#8e44ad" />
+    </linearGradient>
+    <linearGradient id="gradient-green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2ecc71" />
+      <stop offset="100%" stop-color="#27ae60" />
+    </linearGradient>
+    <linearGradient id="gradient-yellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1c40f" />
+      <stop offset="100%" stop-color="#f39c12" />
+    </linearGradient>
+    <linearGradient id="gradient-red" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e74c3c" />
+      <stop offset="100%" stop-color="#c0392b" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.3)" />
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="850" fill="#f8f9fa" />
+  
+  <!-- LAYER 1: CONNECTIONS (now drawn first, so they appear under all other elements) -->
+  <!-- Frontend to API Gateway -->
+  <path d="M500 160 L500 240" class="connection" stroke="#95a5a6"/>
+  
+  <!-- API Gateway to Microservices -->
+  <path d="M400 300 L230 360" class="connection" stroke="#95a5a6" opacity="0.8"/>
+  <path d="M450 300 L400 360" class="connection" stroke="#95a5a6" opacity="0.8"/>
+  <path d="M500 300 L570 360" class="connection" stroke="#95a5a6" opacity="0.8"/>
+  <path d="M550 300 L740 360" class="connection" stroke="#95a5a6" opacity="0.8"/>
+  <path d="M450 300 L400 450" class="connection" stroke="#95a5a6" opacity="0.8"/>
+  <path d="M500 300 L570 450" class="connection" stroke="#95a5a6" opacity="0.8"/>
+  
+  <!-- Service Discovery Connections (reduced opacity and simplified) -->
+  <g opacity="0.5">
+    <path d="M230 450 L230 410" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M230 450 L320 395" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M230 450 L490 395" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M230 450 L660 395" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M230 450 L320 460" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M230 450 L490 460" class="dashed-connection" stroke="#95a5a6"/>
+  </g>
+  
+  <!-- Configuration Server Connections -->
+  <g opacity="0.5">
+    <path d="M310 535 L400 485" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M310 535 L570 485" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M310 535 L740 395" class="dashed-connection" stroke="#95a5a6"/>
+  </g>
+  
+  <!-- Monitoring Connections -->
+  <g opacity="0.5">
+    <path d="M310 595 L230 395" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M310 595 L400 395" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M310 595 L570 395" class="dashed-connection" stroke="#95a5a6"/>
+    <path d="M310 595 L740 395" class="dashed-connection" stroke="#95a5a6"/>
+  </g>
+  
+  <!-- Service to Database Connections -->
+  <path d="M230 410 L230 645" class="connection" stroke="#95a5a6"/>
+  <path d="M400 410 L400 645" class="connection" stroke="#95a5a6"/>
+  <path d="M570 410 L570 645" class="connection" stroke="#95a5a6"/>
+  <path d="M740 410 L740 645" class="connection" stroke="#95a5a6"/>
+  <path d="M400 500 L400 705" class="connection" stroke="#95a5a6"/>
+  <path d="M570 500 L570 705" class="connection" stroke="#95a5a6"/>
+  
+  <!-- Inter-Service Communications -->
+  <path d="M310 385 L320 385" class="bidirectional" stroke="#95a5a6"/>
+  <path d="M480 385 L490 385" class="bidirectional" stroke="#95a5a6"/>
+  <path d="M650 385 L660 385" class="bidirectional" stroke="#95a5a6"/>
+  <path d="M480 475 L490 475" class="bidirectional" stroke="#95a5a6"/>
+  
+  <!-- Appointment Service to Notification Service -->
+  <path d="M660 385 L480 450" class="connection" stroke="#95a5a6"/>
+  
+  <!-- Doctor Service to Rating Service -->
+  <path d="M570 410 L570 450" class="connection" stroke="#95a5a6"/>
+  
+  <!-- Containerization Connections -->
+  <path d="M740 500 L740 450" class="connection" stroke="#95a5a6"/>
+  <path d="M740 570 L740 520" class="connection" stroke="#95a5a6"/>
+  
+  <!-- LAYER 2: CONNECTION LABELS WITH BACKGROUNDS -->
+  <!-- Frontend to API Gateway -->
+  <rect x="490" y="190" width="60" height="20" class="connection-label-bg"/>
+  <text x="520" y="200" class="connection-label">HTTPS</text>
+  
+  <!-- Appointment Service to Notification Service -->
+  <rect x="505" y="430" width="130" height="20" class="connection-label-bg"/>
+  <text x="570" y="440" class="connection-label">Event-driven</text>
+  
+  <!-- LAYER 3: NODES AND TEXT (drawn last, so they appear on top) -->
+  <text x="500" y="40" class="title" text-anchor="middle">QuickCare Microservices Architecture</text>
+  <text x="500" y="70" class="subtitle" text-anchor="middle">Modern, Scalable Healthcare Platform</text>
+
+  <!-- Databases -->
+  <g filter="url(#shadow)">
+    <ellipse cx="230" cy="670" rx="40" ry="25" class="database"/>
+    <text x="230" y="670" class="database-text">User DB</text>
+  </g>
+  <g filter="url(#shadow)">
+    <ellipse cx="400" cy="670" rx="40" ry="25" class="database"/>
+    <text x="400" y="670" class="database-text">Patient DB</text>
+  </g>
+  <g filter="url(#shadow)">
+    <ellipse cx="570" cy="670" rx="40" ry="25" class="database"/>
+    <text x="570" y="670" class="database-text">Doctor DB</text>
+  </g>
+  <g filter="url(#shadow)">
+    <ellipse cx="740" cy="670" rx="40" ry="25" class="database"/>
+    <text x="740" y="670" class="database-text">Appt DB</text>
+  </g>
+  <g filter="url(#shadow)">
+    <ellipse cx="400" cy="730" rx="40" ry="25" class="database"/>
+    <text x="400" y="730" class="database-text">Notif DB</text>
+  </g>
+  <g filter="url(#shadow)">
+    <ellipse cx="570" cy="730" rx="40" ry="25" class="database"/>
+    <text x="570" y="730" class="database-text">Rating DB</text>
+  </g>
+
+  <!-- Frontend Application -->
+  <g filter="url(#shadow)">
+    <rect x="400" y="100" width="200" height="60" class="service-node" fill="url(#gradient-blue)" stroke="#2980b9"/>
+    <text x="500" y="130" class="service-text">Frontend Application</text>
+    <rect x="400" y="175" width="200" height="25" class="service-desc-background"/>
+    <text x="500" y="190" class="service-desc">React.js with Next.js, Material-UI</text>
+  </g>
+
+  <!-- API Gateway -->
+  <g filter="url(#shadow)">
+    <rect x="400" y="240" width="200" height="60" class="service-node" fill="url(#gradient-purple)" stroke="#8e44ad"/>
+    <text x="500" y="270" class="service-text">API Gateway</text>
+    <rect x="350" y="310" width="300" height="25" class="service-desc-background"/>
+    <text x="500" y="325" class="service-desc">Route requests, Authentication, Load balancing</text>
+  </g>
+
+  <!-- Core Microservices -->
+  <g filter="url(#shadow)">
+    <rect x="150" y="360" width="160" height="50" class="service-node" fill="url(#gradient-green)" stroke="#27ae60"/>
+    <text x="230" y="385" class="service-text">Authentication Service</text>
+    <rect x="130" y="425" width="200" height="25" class="service-desc-background"/>
+    <text x="230" y="440" class="service-desc">User auth, RBAC, JWT tokens</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="320" y="360" width="160" height="50" class="service-node" fill="url(#gradient-green)" stroke="#27ae60"/>
+    <text x="400" y="385" class="service-text">Patient Service</text>
+    <rect x="300" y="425" width="200" height="25" class="service-desc-background"/>
+    <text x="400" y="440" class="service-desc">Patient profiles, medical history</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="490" y="360" width="160" height="50" class="service-node" fill="url(#gradient-green)" stroke="#27ae60"/>
+    <text x="570" y="385" class="service-text">Doctor Service</text>
+    <rect x="470" y="425" width="200" height="25" class="service-desc-background"/>
+    <rect x="495" y="425" width="150" height="20" class="service-desc-background"/>
+    <text x="570" y="435" class="service-desc">Doctor profiles, specialties</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="660" y="360" width="160" height="50" class="service-node" fill="url(#gradient-green)" stroke="#27ae60"/>
+    <text x="740" y="385" class="service-text">Appointment Service</text>
+    <rect x="665" y="425" width="150" height="20" class="service-desc-background"/>
+    <text x="740" y="435" class="service-desc">Scheduling, booking, availability</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="320" y="450" width="160" height="50" class="service-node" fill="url(#gradient-green)" stroke="#27ae60"/>
+    <text x="400" y="475" class="service-text">Notification Service</text>
+    <rect x="325" y="510" width="150" height="20" class="service-desc-background"/>
+    <text x="400" y="520" class="service-desc">Email, SMS, in-app notifications</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="490" y="450" width="160" height="50" class="service-node" fill="url(#gradient-green)" stroke="#27ae60"/>
+    <text x="570" y="475" class="service-text">Rating Service</text>
+    <rect x="495" y="510" width="150" height="20" class="service-desc-background"/>
+    <text x="570" y="520" class="service-desc">Patient ratings, reviews, analytics</text>
+  </g>
+
+  <!-- Infrastructure Components -->
+  <g filter="url(#shadow)">
+    <rect x="150" y="450" width="160" height="50" class="service-node" fill="url(#gradient-yellow)" stroke="#f39c12"/>
+    <text x="230" y="475" class="service-text">Service Discovery</text>
+    <rect x="130" y="515" width="200" height="25" class="service-desc-background"/>
+    <text x="230" y="530" class="service-desc">Register and discover services</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="150" y="510" width="160" height="50" class="service-node" fill="url(#gradient-yellow)" stroke="#f39c12"/>
+    <text x="230" y="535" class="service-text">Configuration Server</text>
+    <rect x="130" y="575" width="200" height="25" class="service-desc-background"/>
+    <text x="230" y="590" class="service-desc">Centralized configuration</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="150" y="570" width="160" height="50" class="service-node" fill="url(#gradient-yellow)" stroke="#f39c12"/>
+    <text x="230" y="595" class="service-text">Monitoring &amp; Logging</text>
+    <rect x="130" y="635" width="200" height="25" class="service-desc-background"/>
+    <text x="230" y="650" class="service-desc">ELK Stack, Prometheus, Grafana</text>
+  </g>
+
+  <!-- Containerization -->
+  <g filter="url(#shadow)">
+    <rect x="660" y="450" width="160" height="50" class="service-node" fill="url(#gradient-red)" stroke="#c0392b"/>
+    <text x="740" y="475" class="service-text">Docker</text>
+    <rect x="685" y="505" width="110" height="20" class="service-desc-background"/>
+    <text x="740" y="515" class="service-desc">Containerization</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="660" y="510" width="160" height="50" class="service-node" fill="url(#gradient-red)" stroke="#c0392b"/>
+    <text x="740" y="535" class="service-text">Kubernetes</text>
+    <rect x="665" y="555" width="150" height="20" class="service-desc-background"/>
+    <text x="740" y="565" class="service-desc">Orchestration, auto-scaling</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="660" y="570" width="160" height="50" class="service-node" fill="url(#gradient-red)" stroke="#c0392b"/>
+    <text x="740" y="595" class="service-text">CI/CD Pipeline</text>
+    <rect x="665" y="615" width="150" height="20" class="service-desc-background"/>
+    <text x="740" y="625" class="service-desc">Jenkins/GitHub Actions</text>
+  </g>
+
+  <!-- Security Components -->
+  <g>
+    <rect x="520" y="200" width="60" height="20" class="security-badge animate-pulse"/>
+    <text x="550" y="210" class="security-text">HTTPS</text>
+  </g>
+  <g>
+    <rect x="440" y="200" width="50" height="20" class="security-badge animate-pulse"/>
+    <text x="465" y="210" class="security-text">JWT</text>
+  </g>
+
+  <!-- Legend -->
+  <g class="legend-group" transform="translate(830, 360)">
+    <rect x="0" y="0" width="150" height="310" fill="white" opacity="0.9" rx="10" ry="10"/>
+    <rect x="0" y="0" width="20" height="20" fill="url(#gradient-blue)" stroke="#2980b9" rx="4" ry="4"/>
+    <text x="30" y="15" class="service-desc" text-anchor="start">Frontend</text>
+    
+    <rect x="0" y="30" width="20" height="20" fill="url(#gradient-purple)" stroke="#8e44ad" rx="4" ry="4"/>
+    <text x="30" y="45" class="service-desc" text-anchor="start">API Gateway</text>
+    
+    <rect x="0" y="60" width="20" height="20" fill="url(#gradient-green)" stroke="#27ae60" rx="4" ry="4"/>
+    <text x="30" y="75" class="service-desc" text-anchor="start">Core Microservices</text>
+    
+    <rect x="0" y="90" width="20" height="20" fill="url(#gradient-yellow)" stroke="#f39c12" rx="4" ry="4"/>
+    <text x="30" y="105" class="service-desc" text-anchor="start">Infrastructure Components</text>
+    
+    <rect x="0" y="120" width="20" height="20" fill="url(#gradient-red)" stroke="#c0392b" rx="4" ry="4"/>
+    <text x="30" y="135" class="service-desc" text-anchor="start">Containerization</text>
+    
+    <ellipse cx="10" cy="160" rx="10" ry="10" class="database"/>
+    <text x="30" y="165" class="service-desc" text-anchor="start">Databases</text>
+    
+    <path d="M0 190 L20 190" class="connection" stroke="#95a5a6"/>
+    <text x="30" y="195" class="service-desc" text-anchor="start">Synchronous Communication</text>
+    
+    <path d="M0 220 L20 220" class="dashed-connection" stroke="#95a5a6"/>
+    <text x="30" y="225" class="service-desc" text-anchor="start">Asynchronous Communication</text>
+    
+    <path d="M0 250 L20 250" class="bidirectional" stroke="#95a5a6"/>
+    <text x="30" y="255" class="service-desc" text-anchor="start">Bidirectional Communication</text>
+    
+    <rect x="0" y="280" width="20" height="20" class="security-badge"/>
+    <text x="30" y="295" class="service-desc" text-anchor="start">Security Features</text>
+  </g>
+  
+  <text x="500" y="820" class="subtitle" text-anchor="middle" opacity="0.5">QuickCare Official Architecture - 2025</text>
+</svg>

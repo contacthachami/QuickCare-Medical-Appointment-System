@@ -7,3 +7,42 @@
 .dark .ps__rail-x {
     background-color: transparent !important;
 }
+
+/* Patient Dashboard Styles */
+.user-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.user-initials:hover {
+    transform: scale(1.05);
+}
+
+.patient-card {
+    transition: all 0.3s ease;
+}
+
+.patient-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.2);
+}
+
+/* Responsive Grid Adjustments */
+@media (max-width: 768px) {
+    .patient-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -11,19 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('addresses', function (Blueprint $table) {
-            $table->id();
-            $table->string('rue');
-            $table->string('ville');
-            $table->timestamps();
+        Schema::table('schedules', function (Blueprint $table) {
+            $table->date('specific_date')->nullable()->after('day');
         });
     }
-//2025_03_12_203844
+
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('addresses');
+        Schema::table('schedules', function (Blueprint $table) {
+            $table->dropColumn('specific_date');
+        });
     }
 };

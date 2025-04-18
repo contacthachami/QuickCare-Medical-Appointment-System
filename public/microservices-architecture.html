@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>QuickCare Microservices Architecture</title>
+        <style>
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            @keyframes float {
+                0% {
+                    transform: translateY(0px);
+                }
+                50% {
+                    transform: translateY(-5px);
+                }
+                100% {
+                    transform: translateY(0px);
+                }
+            }
+            @keyframes pulse {
+                0% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.02);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+
+            body {
+                font-family: "Arial", sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f8f9fa;
+                color: #333;
+                animation: fadeIn 1s ease-in-out;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem;
+            }
+            header {
+                text-align: center;
+                margin-bottom: 2rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid #e9ecef;
+                animation: float 6s ease-in-out infinite;
+            }
+            h1 {
+                color: #2c3e50;
+                margin-bottom: 0.5rem;
+                font-size: 2.5rem;
+                background: linear-gradient(45deg, #2c3e50, #3498db);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            .subtitle {
+                color: #7f8c8d;
+                font-size: 1.2rem;
+                margin-bottom: 2rem;
+            }
+            .architecture-container {
+                background-color: white;
+                border-radius: 12px;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+                padding: 2rem;
+                margin-bottom: 2rem;
+                overflow: auto;
+                transition: all 0.3s ease;
+                animation: pulse 5s infinite ease-in-out;
+            }
+            .architecture-container:hover {
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            }
+            .architecture-svg {
+                width: 100%;
+                height: auto;
+                min-height: 800px;
+            }
+            .description {
+                line-height: 1.8;
+                margin-bottom: 2rem;
+                font-size: 1.1rem;
+            }
+            .legend-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                margin-top: 2rem;
+                background-color: white;
+                border-radius: 12px;
+                padding: 1.5rem;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .legend-item {
+                display: flex;
+                align-items: center;
+                margin-right: 1.5rem;
+                margin-bottom: 0.5rem;
+                transition: transform 0.2s ease;
+            }
+            .legend-item:hover {
+                transform: translateY(-2px);
+            }
+            .legend-color {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                margin-right: 0.5rem;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }
+            .frontend {
+                background: linear-gradient(135deg, #3498db, #2980b9);
+            }
+            .api-gateway {
+                background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            }
+            .microservices {
+                background: linear-gradient(135deg, #2ecc71, #27ae60);
+            }
+            .infrastructure {
+                background: linear-gradient(135deg, #f1c40f, #f39c12);
+            }
+            .containerization {
+                background: linear-gradient(135deg, #e74c3c, #c0392b);
+            }
+            .database {
+                background-color: #ecf0f1;
+                border: 2px solid #bdc3c7;
+                border-radius: 50%;
+                width: 16px;
+                height: 16px;
+                box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+            }
+            footer {
+                text-align: center;
+                margin-top: 2rem;
+                padding-top: 1rem;
+                border-top: 1px solid #e9ecef;
+                color: #7f8c8d;
+            }
+            .button {
+                display: inline-block;
+                background: linear-gradient(135deg, #3498db, #2980b9);
+                color: white;
+                padding: 0.8rem 1.5rem;
+                border-radius: 6px;
+                text-decoration: none;
+                margin-top: 1rem;
+                transition: all 0.3s ease;
+                font-weight: bold;
+                box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+            }
+            .button:hover {
+                background: linear-gradient(135deg, #2980b9, #3498db);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+            }
+            .overview-card {
+                background-color: white;
+                border-radius: 12px;
+                padding: 1.5rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                transition: all 0.3s ease;
+            }
+            .overview-card:hover {
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            }
+            .overview-card h3 {
+                color: #2c3e50;
+                border-bottom: 2px solid #e9ecef;
+                padding-bottom: 0.5rem;
+                margin-top: 0;
+            }
+            .overview-card ul {
+                padding-left: 1.5rem;
+            }
+            .overview-card li {
+                margin-bottom: 0.5rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>QuickCare Microservices Architecture</h1>
+                <p class="subtitle">Modern, Scalable Healthcare Platform</p>
+            </header>
+
+            <div class="description">
+                <p>
+                    This interactive diagram illustrates the official
+                    microservices architecture for the QuickCare healthcare
+                    platform. The architecture has been designed to provide a
+                    scalable, maintainable, and modern foundation for the
+                    application, enabling independent development and deployment
+                    of different components.
+                </p>
+                <p>
+                    The diagram shows the relationships between different
+                    services and components, with animated visualizations
+                    highlighting the flow of data and dependencies between
+                    services. Hover over components to see enhanced details.
+                </p>
+            </div>
+
+            <div class="architecture-container">
+                <object
+                    class="architecture-svg"
+                    type="image/svg+xml"
+                    data="img/microservices_architecture.svg"
+                >
+                    Your browser does not support SVG
+                </object>
+            </div>
+
+            <div class="legend-container">
+                <h3>Legend</h3>
+                <div style="display: flex; flex-wrap: wrap; width: 100%">
+                    <div class="legend-item">
+                        <div class="legend-color frontend"></div>
+                        <span>Frontend</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color api-gateway"></div>
+                        <span>API Gateway</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color microservices"></div>
+                        <span>Core Microservices</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color infrastructure"></div>
+                        <span>Infrastructure Components</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color containerization"></div>
+                        <span>Containerization</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color database"></div>
+                        <span>Databases</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-card">
+                <h3>Architecture Overview</h3>
+                <p>The QuickCare microservices architecture consists of:</p>
+                <ul>
+                    <li>
+                        <strong>Frontend Application:</strong> React.js with
+                        Next.js, providing a modern and responsive user
+                        interface with Material-UI components and optimized
+                        performance
+                    </li>
+                    <li>
+                        <strong>API Gateway:</strong> Central entry point that
+                        routes requests to appropriate microservices, handles
+                        authentication, and provides load balancing and rate
+                        limiting
+                    </li>
+                    <li>
+                        <strong>Core Microservices:</strong>
+                        <ul>
+                            <li>
+                                <strong>Authentication Service:</strong> Handles
+                                user authentication, authorization, and security
+                                policy enforcement
+                            </li>
+                            <li>
+                                <strong>Patient Service:</strong> Manages
+                                patient profiles, medical history, and insurance
+                                information
+                            </li>
+                            <li>
+                                <strong>Doctor Service:</strong> Handles doctor
+                                profiles, specialties, and credentials
+                                management
+                            </li>
+                            <li>
+                                <strong>Appointment Service:</strong> Manages
+                                scheduling, booking, and real-time availability
+                            </li>
+                            <li>
+                                <strong>Notification Service:</strong> Handles
+                                email, SMS, and in-app notifications with
+                                delivery tracking
+                            </li>
+                            <li>
+                                <strong>Rating Service:</strong> Manages patient
+                                ratings, reviews, and analytics for doctors
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Infrastructure Components:</strong> Service
+                        Discovery, Configuration Server, and Monitoring &
+                        Logging for system health and performance tracking
+                    </li>
+                    <li>
+                        <strong>Containerization:</strong> Docker and Kubernetes
+                        for deployment, orchestration, and automatic scaling
+                    </li>
+                    <li>
+                        <strong>Data Management:</strong> Each microservice
+                        maintains its own database, with cross-service
+                        communication through APIs
+                    </li>
+                    <li>
+                        <strong>Security:</strong> JWT-based authentication,
+                        HTTPS encryption, and role-based access control across
+                        all services
+                    </li>
+                </ul>
+                <a href="/OFFICIAL_MICROSERVICES_ARCHITECTURE.md" class="button"
+                    >View Full Architecture Documentation</a
+                >
+            </div>
+
+            <footer>
+                <p>© 2025 QuickCare Healthcare Platform</p>
+            </footer>
+        </div>
+    </body>
+</html>

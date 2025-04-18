@@ -1045,4 +1045,41 @@ class AdminController extends Controller
             'Content-Disposition' => 'attachment; filename="patients.pdf"',
         ]);
     }
+
+    public function doctorTravelTimes()
+    {
+        // Get all appointments with recorded travel times
+        $appointments = Appointment::whereNotNull('travel_time_minutes')
+                                    ->orderBy('appointment_date', 'desc')
+                                    ->get();
+        
+        // Group by doctor
+        $doctorAppointments = $appointments->groupBy('doctor_id');
+        
+        // Calculate statistics for each doctor
+        $doctorStats = [];
+        foreach ($doctorAppointments as $doctorId => $appointments) {
+            $doctor = Doctor::find($doctorId);
+            
+            // Basic stats
+            $totalAppointments = $appointments->count();
+            $totalTravelTime = $appointments->sum('travel_time_minutes');
+            $averageTravelTime = $totalAppointments > 0 ? round($totalTravelTime / $totalAppointments, 2) : 0;
+            $maxTravelTime = $appointments->max('travel_time_minutes');
+            $minTravelTime = $appointments->min('travel_time_minutes');
+            
+            // Store stats
+            $doctorStats[] = [
+                'doctor' => $doctor,
+                'totalAppointments' => $totalAppointments,
+                'totalTravelTime' => $totalTravelTime,
+                'averageTravelTime' => $averageTravelTime,
+                'maxTravelTime' => $maxTravelTime,
+                'minTravelTime' => $minTravelTime,
+                'appointments' => $appointments
+            ];
+        }
+        
+        return view('panels.admin.doctor-travel-times', compact('doctorStats'));
+    }
 }

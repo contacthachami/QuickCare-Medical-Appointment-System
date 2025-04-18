@@ -50,7 +50,28 @@
         <h2 class="text-xl font-semibold leading-tight">
             {{ __('Appointment Details') }}
         </h2>
-        <p class="mt-2 text-gray-700 dark:text-gray-400">Status:
+        
+        <!-- Appointment Info -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Appointment Date</p>
+                <p class="font-medium text-gray-800 dark:text-gray-300">
+                    {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y') }}
+                </p>
+            </div>
+            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Scheduled Time</p>
+                <p class="font-medium text-gray-800 dark:text-gray-300">
+                    {{ $appointment->schedule->start ?? 'Time not specified' }}
+                </p>
+            </div>
+            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Appointment Reason</p>
+                <p class="font-medium text-gray-800 dark:text-gray-300">{{ $appointment->reason }}</p>
+            </div>
+        </div>
+        
+        <p class="mt-4 text-gray-700 dark:text-gray-400">Status:
             @if ($appointment->status == 'Pending')
                 <span
                     class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 text-xs font-medium px-2.5 py-0.5 rounded">{{ $appointment->status }}</span>
@@ -65,6 +86,110 @@
                     class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">{{ $appointment->status }}</span>
             @endif
         </p>
+        
+        <!-- Travel Tracking System -->
+        <div class="mt-6 border border-gray-200 rounded-lg p-5 bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-route mr-2 text-blue-600"></i> Travel Tracking
+            </h3>
+            
+            <!-- Travel Timeline -->
+            <div class="relative">
+                <!-- Timeline Track -->
+                <div class="absolute h-full w-0.5 bg-gray-200 left-6 top-0"></div>
+                
+                <!-- Check-in Node -->
+                <div class="relative flex items-center mb-6">
+                    <div class="z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 {{ $appointment->check_in_time ? 'bg-blue-100 border-blue-500' : 'bg-white border-gray-300' }}">
+                        <i class="fas fa-sign-in-alt {{ $appointment->check_in_time ? 'text-blue-600' : 'text-gray-400' }}"></i>
+                    </div>
+                    
+                    <div class="ml-4 flex-grow">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-md font-medium text-gray-700">Check-In</h4>
+                            @if($appointment->check_in_time)
+                                <span class="text-sm text-blue-600 font-medium">
+                                    {{ \Carbon\Carbon::parse($appointment->check_in_time)->format('h:i A, d M Y') }}
+                                </span>
+                            @endif
+                        </div>
+                        
+                        @if(!$appointment->check_in_time)
+                            <p class="text-sm text-gray-500 mb-2">Record when you start traveling to this appointment</p>
+                            <form action="{{ route('doctor.appointment.check-in', $appointment->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200 flex items-center text-sm">
+                                    <i class="fas fa-clock mr-2"></i> Record Check-In Time
+                                </button>
+                            </form>
+                        @else
+                            <p class="text-sm text-green-600">Travel started</p>
+                        @endif
+                    </div>
+                </div>
+                
+                <!-- Check-out Node -->
+                <div class="relative flex items-center {{ $appointment->check_out_time ? 'mb-6' : '' }}">
+                    <div class="z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 {{ $appointment->check_out_time ? 'bg-green-100 border-green-500' : ($appointment->check_in_time ? 'bg-white border-gray-300' : 'bg-white border-gray-200') }}">
+                        <i class="fas fa-sign-out-alt {{ $appointment->check_out_time ? 'text-green-600' : ($appointment->check_in_time ? 'text-gray-400' : 'text-gray-300') }}"></i>
+                    </div>
+                    
+                    <div class="ml-4 flex-grow">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-md font-medium {{ $appointment->check_in_time ? 'text-gray-700' : 'text-gray-400' }}">Check-Out</h4>
+                            @if($appointment->check_out_time)
+                                <span class="text-sm text-green-600 font-medium">
+                                    {{ \Carbon\Carbon::parse($appointment->check_out_time)->format('h:i A, d M Y') }}
+                                </span>
+                            @endif
+                        </div>
+                        
+                        @if(!$appointment->check_out_time && $appointment->check_in_time)
+                            <p class="text-sm text-gray-500 mb-2">Record when you complete your travel to this appointment</p>
+                            <form action="{{ route('doctor.appointment.check-out', $appointment->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200 flex items-center text-sm">
+                                    <i class="fas fa-flag-checkered mr-2"></i> Record Check-Out Time
+                                </button>
+                            </form>
+                        @elseif($appointment->check_out_time)
+                            <p class="text-sm text-green-600">Travel completed</p>
+                        @else
+                            <p class="text-sm text-gray-400">Please check in first before checking out</p>
+                        @endif
+                    </div>
+                </div>
+                
+                <!-- Travel Summary -->
+                @if($appointment->check_in_time && $appointment->check_out_time)
+                    <div class="mt-6 bg-white p-4 rounded-lg border border-green-200 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="p-2 rounded-full bg-green-100 mr-3">
+                                    <i class="fas fa-clock text-green-600"></i>
+                                </div>
+                                <div>
+                                    <h5 class="font-medium text-gray-800">Travel Summary</h5>
+                                    <p class="text-sm text-gray-600">
+                                        From {{ \Carbon\Carbon::parse($appointment->check_in_time)->format('h:i A') }} 
+                                        to {{ \Carbon\Carbon::parse($appointment->check_out_time)->format('h:i A') }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xl font-bold text-green-600">{{ $appointment->travel_time_minutes }} min</span>
+                                <p class="text-sm text-gray-500">Total travel time</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+            
+            <!-- Travel Info Note -->
+            <div class="mt-4 text-xs text-gray-500 italic">
+                <p>Note: Travel time data is collected for administrative purposes to optimize appointment scheduling.</p>
+            </div>
+        </div>
     </div>
 
 

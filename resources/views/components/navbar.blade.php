@@ -47,13 +47,19 @@
 
         @php
             $user = Auth::user()->img;
+            $fullName = Auth::user()->name;
+            $nameParts = explode(' ', $fullName);
+            $firstName = isset($nameParts[0]) ? $nameParts[0] : '';
+            $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
+            $initials = strtoupper(substr($firstName, 0, 1) . substr($lastName, 0, 1));
         @endphp
         @if ($user)
             <img src="{{ asset('storage/profile_pictures/' . $user) }}" alt="Profile Picture"
-                class="w-12 h-12 rounded-full">
+                class="w-12 h-12 rounded-full shadow-sm hover:shadow-md transition-shadow duration-300">
         @else
-            <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name }}" alt="test"
-                class="w-12 rounded-full">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 text-gray-700 font-bold shadow-sm hover:shadow-md transition-shadow duration-300">
+                {{ $initials }}
+            </div>
         @endif
 
 

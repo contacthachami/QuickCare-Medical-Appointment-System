@@ -106,14 +106,39 @@
         @php
             $groupedSchedule = [];
             foreach ($schedule as $item) {
-                $groupedSchedule[$item->day][] = $item;
+                $dayKey = $item->day;
+                if ($item->specific_date) {
+                    $dateObj = \Carbon\Carbon::parse($item->specific_date);
+                    $formattedDay = $dateObj->format('l');
+                    $formattedDate = $dateObj->format('M d, Y');
+                    $dayKey = $formattedDay . ' ' . $formattedDate;
+                }
+                $groupedSchedule[$dayKey][] = $item;
             }
+            // Sort days of week in correct order
+            $dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            $orderedGroups = [];
+            
+            // First add regular days without specific dates
+            foreach ($dayOrder as $day) {
+                if (isset($groupedSchedule[$day])) {
+                    $orderedGroups[$day] = $groupedSchedule[$day];
+                    unset($groupedSchedule[$day]);
+                }
+            }
+            
+            // Then add specific dates (already formatted with day + date)
+            foreach ($groupedSchedule as $key => $items) {
+                $orderedGroups[$key] = $items;
+            }
+            
+            $groupedSchedule = $orderedGroups;
         @endphp
 
         <div class="p-6 mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach ($groupedSchedule as $day => $items)
                 <div class="border border-gray-200 dark:border-gray-700 p-4 rounded-md">
-                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-300">{{ ucfirst($day) }}</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-300">{{ $day }}</p>
                     <div class="grid grid-cols-1 gap-4 mt-2">
                         @foreach ($items as $item)
                             <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-md shadow-md flex justify-center">
@@ -265,7 +290,6 @@
                             success: function(appointments) {
                                 $('#appointment_time').empty();
                                 if (response.length === 0) {
-
                                     $('#appointment_time').append(
                                         '<option value="">No schedules available for this date</option>'
                                     );
@@ -295,6 +319,7 @@
                                                 .append(
                                                     '<option value="' +
                                                     schedule.id + '">' +
+                                                    schedule.display + ' - ' +
                                                     schedule.start +
                                                     '</option>');
                                         });

@@ -38,6 +38,12 @@
                                         class="mr-2"><i class="fa-regular fa-clock"
                                             style="color: #74C0FC;"></i></span>{{ $item->start }} --
                                     {{ $item->end }}</div>
+                                @if($item->specific_date)
+                                <div class="text-xs text-gray-700 dark:text-gray-400 mt-1"> 
+                                    <span class="mr-2"><i class="fa-regular fa-calendar" style="color: #74C0FC;"></i></span>
+                                    {{ \Carbon\Carbon::parse($item->specific_date)->format('M d, Y') }}
+                                </div>
+                                @endif
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <form id="deleteForm_{{ $item->id }}"
                                         action="{{ route('doctor.schedule.delete', $item->id) }}"
@@ -84,6 +90,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Day</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Start Time</th>
                         </tr>
                     </thead>
@@ -94,6 +102,9 @@
                         @foreach ($days as $day)
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">{{ ucfirst($day) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input type="date" name="specific_date[{{ $day }}]" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" min="{{ date('Y-m-d') }}">
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap flex flex-wrap">
                                     @for ($i = 8; $i <= 19; $i++)
                                         <div class="flex items-center space-x-2 mb-2">

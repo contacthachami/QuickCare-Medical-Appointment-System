@@ -67,6 +67,11 @@
                 <i class="fa-solid fa-file-contract"></i>
             </x-slot>
         </x-sidebar.link>
+        <x-sidebar.link title="Travel Analytics" href="{{ route('admin.doctor.travel-times') }}" :isActive="request()->routeIs('admin.doctor.travel-times')">
+            <x-slot name="icon">
+                <i class="fa-solid fa-route"></i>
+            </x-slot>
+        </x-sidebar.link>
     @endif
     @if (auth()->user()->user_type === 'patient')
         <x-sidebar.link title="Doctor List" href="{{ route('patiens.doctors') }}" :isActive="request()->routeIs('patiens.doctors')">
@@ -80,18 +85,29 @@
                 <i class="fa-regular fa-calendar-check"></i>
             </x-slot>
         </x-sidebar.link>
-        <x-sidebar.link title="Health Articles " href="{{ route('patiens.health.tips.view', authUser()->patient->id) }}"
+        <x-sidebar.link title="Health Articles" href="{{ route('patiens.health.tips.view', authUser()->patient->id) }}"
             :isActive="request()->routeIs('patiens.health.tips.view')">
             <x-slot name="icon">
                 <i class="fa-solid fa-staff-snake"></i>
             </x-slot>
         </x-sidebar.link>
+        <x-sidebar.link title="Emergency Contacts" href="{{ route('patients.emergency.contacts.view') }}"
+            :isActive="request()->routeIs('patients.emergency.contacts.view')">
+            <x-slot name="icon">
+                <i class="fa-solid fa-phone-volume"></i>
+            </x-slot>
+        </x-sidebar.link>
     @endif
 
     @if (auth()->user()->user_type === 'doctor')
-        <x-sidebar.link title="Appointments" href="{{ route('doctor.appointments') }}" :isActive="request()->routeIs('doctor.appointments')">
+        <x-sidebar.link title="Appointments" href="{{ route('doctor.appointments') }}" :isActive="request()->routeIs('doctor.appointments') && !request()->has('travel')">
             <x-slot name="icon">
                 <i class="fa-regular fa-calendar-check"></i>
+            </x-slot>
+        </x-sidebar.link>
+        <x-sidebar.link title="Travel Tracking" href="{{ route('doctor.travel-tracking') }}" :isActive="request()->routeIs('doctor.travel-tracking') || (request()->routeIs('doctor.appointments') && request()->has('travel'))">
+            <x-slot name="icon">
+                <i class="fa-solid fa-route"></i>
             </x-slot>
         </x-sidebar.link>
         <x-sidebar.link title="Schedules" href="{{ route('doctor.schedule') }}" :isActive="request()->routeIs('doctor.schedule')">

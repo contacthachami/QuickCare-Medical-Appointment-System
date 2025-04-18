@@ -106,7 +106,10 @@
                         <p class="text-gray-800 dark:text-gray-200"><strong>Patient  name : </strong> </p>
                         <p class="text-gray-800 dark:text-gray-200">{{ $appointment->patient->user->name }}</p>
                         <p class="text-gray-800 dark:text-gray-200"> <strong> Appointment date : </strong> </p>
-                        <p class="text-gray-500 dark:text-gray-400">{{ $appointment->appointment_date }}</p>
+                        <p class="text-gray-500 dark:text-gray-400">
+                            {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y') }} 
+                            at {{ $appointment->schedule->start ?? 'unknown time' }}
+                        </p>
                         <p class="text-gray-800 dark:text-gray-200"> <strong> Reason : </strong> </p>
                         <p class="text-gray-500 dark:text-gray-400">{{ $appointment->reason }}</p>
                     </div>
@@ -139,7 +142,10 @@
                         <p class="text-gray-800 dark:text-gray-200"><strong>Patient  name : </strong> </p>
                         <p class="text-gray-800 dark:text-gray-200">{{ $visit->patient->user->name }}</p>
                         <p class="text-gray-800 dark:text-gray-200"> <strong> Visit date : </strong> </p>
-                        <p class="text-gray-500 dark:text-gray-400">{{ $visit->appointment_date }}</p>
+                        <p class="text-gray-500 dark:text-gray-400">
+                            {{ \Carbon\Carbon::parse($visit->appointment_date)->format('M d, Y') }} 
+                            at {{ $visit->schedule->start ?? 'unknown time' }}
+                        </p>
                     </div>
                 @endforeach
 
@@ -189,7 +195,94 @@
         </a>
     </div>
 
+    <!-- Travel Tracking Widget -->
+    <div class="p-6 bg-white rounded-md shadow-md overflow-hidden dark:bg-dark-eval-1 m-3">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <strong class="text-lg text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fas fa-route mr-2 text-blue-500"></i> Travel Tracking
+                </strong>
+                <p class="text-sm text-gray-500">Record your travel time to patient appointments</p>
+            </div>
+            <a href="{{ route('doctor.appointments') }}?travel=active" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                <span>View all travel records</span>
+                <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
 
-
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @php 
+                $todayAppointments = $upcommingAppointments->filter(function($appointment) {
+                    return \Carbon\Carbon::parse($appointment->appointment_date)->isToday();
+                });
+                $hasActiveAppointments = count($todayAppointments) > 0;
+            @endphp
+            
+            @if($hasActiveAppointments)
+                @foreach($todayAppointments->take(3) as $appointment)
+                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+                        <div class="p-3 bg-blue-50 dark:bg-blue-900 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <span class="font-medium text-blue-700 dark:text-blue-300">{{ $appointment->schedule->start ?? \Carbon\Carbon::parse($appointment->appointment_date)->format('h:i A') }}</span>
+                            <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-300 rounded-full">Today</span>
+                        </div>
+                        <div class="p-4">
+                            <div class="mb-2">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Patient:</p>
+                                <p class="font-medium text-gray-800 dark:text-gray-200">{{ $appointment->patient->user->name }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Status:</p>
+                                @if(!$appointment->check_in_time)
+                                    <div class="mt-1 text-xs inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300">
+                                        <i class="fas fa-clock mr-1"></i> Travel not started
+                                    </div>
+                                @elseif($appointment->check_in_time && !$appointment->check_out_time)
+                                    <div class="mt-1 text-xs inline-flex items-center px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                                        <i class="fas fa-route mr-1"></i> Currently traveling
+                                    </div>
+                                @else
+                                    <div class="mt-1 text-xs inline-flex items-center px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">
+                                        <i class="fas fa-check-circle mr-1"></i> Travel completed ({{ $appointment->travel_time_minutes }} min)
+                                    </div>
+                                @endif
+                            </div>
+                            
+                            @if(!$appointment->check_in_time)
+                                <form action="{{ route('doctor.appointment.check-in', $appointment->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm flex items-center justify-center">
+                                        <i class="fas fa-play-circle mr-1"></i> Start Travel
+                                    </button>
+                                </form>
+                            @elseif($appointment->check_in_time && !$appointment->check_out_time)
+                                <form action="{{ route('doctor.appointment.check-out', $appointment->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-sm flex items-center justify-center">
+                                        <i class="fas fa-flag-checkered mr-1"></i> Complete Travel
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('doctor.CRUD.appointment.details', [$appointment->id]) }}" class="w-full block text-center bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-3 rounded text-sm">
+                                    <i class="fas fa-eye mr-1"></i> View Details
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            @else
+                <div class="col-span-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-4">
+                        <i class="fas fa-calendar-times text-gray-400 dark:text-gray-500 text-xl"></i>
+                    </div>
+                    <h3 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-1">No appointments for today</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any appointments scheduled for today.</p>
+                    <a href="{{ route('doctor.appointments') }}?travel=active" class="mt-3 inline-block text-blue-600 hover:text-blue-800 text-sm">
+                        View all travel records
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
 
 </x-doctor-layout>

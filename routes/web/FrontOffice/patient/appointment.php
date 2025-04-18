@@ -40,4 +40,10 @@ Route::middleware(['auth', 'patient'])->group(function () {
 
     Route::get('/patient/appointment/{id}/download-pdf',  [PatientController::class, 'downloadPDF_Appointment'])
         ->name('appointment.download-pdf');
+
+    // Export appointments to Excel route
+    Route::post('/patient/appointments/export', [PatientController::class, 'exportAppointments'])->name('patient.appointments.export');
+    
+    // Print appointments route
+    Route::post('/patient/appointments/print', [PatientController::class, 'printAppointments'])->name('patient.appointments.print');
 });

@@ -1,0 +1,206 @@
+/**
+ * QuickCare Microservices Architecture Animation Styles
+ * This stylesheet provides additional styling for the animated microservices architecture diagram
+ */
+
+/* Animation keyframes */
+@keyframes dataFlow {
+    0% {
+        stroke-dashoffset: 1000;
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 0;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+/* Service node styles */
+.service-node {
+    transition: transform 0.3s ease, filter 0.3s ease;
+    cursor: pointer;
+}
+
+.service-node:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0px 0px 8px rgba(52, 152, 219, 0.8));
+}
+
+/* Connection path styles */
+.connection-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    stroke-width: 2;
+    fill: none;
+    opacity: 0;
+}
+
+.connection-path.animate {
+    animation: dataFlow 4s linear forwards;
+}
+
+/* Data packet styles */
+.data-packet {
+    fill: #3498db;
+    r: 5;
+    filter: drop-shadow(0px 0px 3px rgba(52, 152, 219, 0.8));
+}
+
+/* Pulse effect styles */
+.pulse-effect {
+    fill: rgba(52, 152, 219, 0.5);
+    r: 5;
+    transform-origin: center;
+    animation: pulse 1.5s ease-out infinite;
+}
+
+/* Tooltip styles */
+.service-tooltip {
+    position: absolute;
+    background-color: rgba(44, 62, 80, 0.9);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    max-width: 250px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.service-tooltip.visible {
+    opacity: 1;
+}
+
+.service-tooltip h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 5px;
+}
+
+.service-tooltip p {
+    margin: 5px 0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Architecture container enhancements */
+.architecture-container {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Interactive controls */
+.architecture-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.control-button {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.control-button:hover {
+    background: linear-gradient(135deg, #2980b9, #3498db);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.control-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Service highlight styles */
+.highlight-service {
+    filter: drop-shadow(0px 0px 10px rgba(52, 152, 219, 1));
+    transform: scale(1.05);
+}
+
+.highlight-connection {
+    stroke: #3498db;
+    stroke-width: 3;
+    filter: drop-shadow(0px 0px 3px rgba(52, 152, 219, 0.8));
+}
+
+/* Animation speed controls */
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.speed-control label {
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.speed-control input {
+    width: 100px;
+}
+
+/* Mobile responsiveness for the animation */
+@media (max-width: 768px) {
+    .architecture-controls {
+        flex-wrap: wrap;
+    }
+    
+    .control-button {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    .service-tooltip {
+        max-width: 200px;
+        font-size: 12px;
+    }
+}
