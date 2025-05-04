@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight flex items-center">
-                <i class="fas fa-route mr-2 text-blue-600"></i>{{ __('Travel Tracking') }}
+                {{-- <i class="fas fa-route mr-2 text-blue-600"></i>{{ __('Travel Tracking') }} --}}
             </h2>
             <div class="text-right">
                 <span class="text-sm text-gray-600">Current Date:</span>
@@ -73,66 +73,6 @@
     <div class="container mx-auto">
         <h1 class="text-2xl font-bold text-gray-900 mb-6">Travel Tracking</h1>
 
-        <!-- Debug Section - START -->
-        <div class="mb-8 bg-gray-100 border border-gray-300 rounded-lg p-5">
-            <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                <i class="fas fa-bug mr-2 text-red-500"></i> Debug Information
-            </h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="p-3 bg-white rounded-lg shadow-sm">
-                    <h3 class="font-medium text-sm text-gray-500 mb-2">Active Appointment Data</h3>
-                    <div class="text-xs font-mono bg-gray-50 p-2 rounded border border-gray-200 max-h-28 overflow-y-auto">
-                        @if($hasActiveAppointments)
-                            @foreach($todayAppointments as $index => $appt)
-                                <div class="mb-1 pb-1 border-b border-dashed border-gray-200">
-                                    <div><span class="text-gray-500">ID:</span> {{ $appt->id }}</div>
-                                    <div><span class="text-gray-500">Patient:</span> {{ $appt->patient->user->name }}</div>
-                                    <div><span class="text-gray-500">Check-in:</span> {{ $appt->check_in_time ? $appt->check_in_time : 'Not checked in' }}</div>
-                                    <div><span class="text-gray-500">Check-out:</span> {{ $appt->check_out_time ? $appt->check_out_time : 'Not checked out' }}</div>
-                                </div>
-                            @endforeach
-                        @else
-                            <div class="text-gray-500 italic">No active appointments found</div>
-                        @endif
-                    </div>
-                </div>
-                
-                <div class="p-3 bg-white rounded-lg shadow-sm">
-                    <h3 class="font-medium text-sm text-gray-500 mb-2">Test Actions</h3>
-                    <div class="flex flex-wrap gap-2">
-                        @if($hasActiveAppointments && isset($todayAppointments[0]))
-                            @if(!$todayAppointments[0]->check_in_time)
-                                <form action="{{ route('doctor.appointment.check-in', $todayAppointments[0]->id) }}" method="POST" class="inline-block">
-                                    @csrf
-                                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded">
-                                        Test Check-In
-                                    </button>
-                                </form>
-                            @elseif(!$todayAppointments[0]->check_out_time)
-                                <form action="{{ route('doctor.appointment.check-out', $todayAppointments[0]->id) }}" method="POST" class="inline-block">
-                                    @csrf
-                                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white text-xs py-1 px-2 rounded">
-                                        Test Check-Out
-                                    </button>
-                                </form>
-                            @endif
-                        @else
-                            <div class="text-gray-500 italic text-xs">No appointments available for testing</div>
-                        @endif
-                    </div>
-                    <div class="mt-2 text-xs text-gray-500">
-                        These buttons can be used to test the check-in/out functionality for the first appointment.
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-xs text-gray-500 italic">
-                This section is for debugging purposes only and should be removed in production.
-            </div>
-        </div>
-        <!-- Debug Section - END -->
-        
         <div class="bg-white rounded-lg shadow-md p-6">
             @if(isset($activeTravelAppointment))
                 <!-- Currently Traveling Section -->
@@ -324,11 +264,11 @@
                             @forelse ($appointments as $appointment)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $appointment->date ? \Carbon\Carbon::parse($appointment->date)->format('M j, Y') : 'N/A' }}
+                                        {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M j, Y') }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        {{ $appointment->patient ? $appointment->patient->full_name : 'Unknown Patient' }} - 
-                                        {{ $appointment->service ? $appointment->service->name : 'Unknown Service' }}
+                                        {{ $appointment->patient && $appointment->patient->user ? $appointment->patient->user->name : 'Unknown Patient' }} - 
+                                        {{ $appointment->reason ?? 'Unknown Service' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($appointment->check_in_time)
@@ -390,20 +330,7 @@
             </div>
 
             <!-- Export Section -->
-            <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-bold mb-4">Export Travel Records</h2>
-                <div class="flex flex-wrap gap-4">
-                    <a href="{{ route('doctor.travel.export.excel') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                        <i class="fas fa-file-excel mr-2"></i> Export to Excel
-                    </a>
-                    <a href="{{ route('doctor.travel.export.csv') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                        <i class="fas fa-file-csv mr-2"></i> Export to CSV
-                    </a>
-                    <a href="{{ route('doctor.travel.export.pdf') }}" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
-                        <i class="fas fa-file-pdf mr-2"></i> Export to PDF
-                    </a>
-                </div>
-            </div>
+        
         </div>
     </div>
 

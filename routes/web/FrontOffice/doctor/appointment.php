@@ -29,6 +29,12 @@ Route::middleware(['auth', 'doctor'])->group(function () {
         Route::get('/doctor/travel/export-csv', [DoctorController::class, 'exportTravelRecords'])->name('doctor.travel.export.csv')->defaults('format', 'csv');
         Route::get('/doctor/travel/export-pdf', [DoctorController::class, 'exportTravelRecords'])->name('doctor.travel.export.pdf')->defaults('format', 'pdf');
         
+        // Export all appointments route
+        Route::get('/doctor/appointments-export', [DoctorController::class, 'exportAppointments'])->name('doctor.appointments.export');
+        
+        // Print appointments route
+        Route::get('/doctor/appointments-print', [DoctorController::class, 'printAppointments'])->name('doctor.appointments.print');
+        
         // Calendar schedules routes
         Route::get('/doctor/schedules', [DoctorController::class, 'getAllSchedulesForCalendar'])->name('doctor.schedules.index');
 

@@ -14,6 +14,10 @@ use App\Models\Rating;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\TravelRecordsExport;
+use App\Exports\AppointmentsExport;
+use App\Exports\DoctorPatientsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DoctorController extends Controller
 {
@@ -630,13 +634,14 @@ class DoctorController extends Controller
         // Get the doctor's ID
         $doctor_id = Auth::user()->doctor->id;
         
-        // Get paginated appointments for the travel history table
+        // Get paginated appointments for the travel history table with all necessary relationships
         $appointments = Appointment::where('doctor_id', $doctor_id)
+            ->with(['patient.user.address', 'schedule'])
             ->orderBy('appointment_date', 'desc')
             ->paginate(10);
         
         // Get all appointments for calculations
-        $allAppointments = Auth::user()->doctor->Appointments;
+        $allAppointments = Auth::user()->doctor->Appointments()->with(['patient.user.address', 'schedule'])->get();
         
         // Filter completed appointments (those with both check-in and check-out times)
         $completedAppointments = $allAppointments->filter(function($appointment) {
@@ -718,44 +723,15 @@ class DoctorController extends Controller
      */
     private function exportTravelRecordsExcel($appointments)
     {
-        $headers = [
-            'Content-Type' => 'application/vnd.ms-excel',
-            'Content-Disposition' => 'attachment; filename="travel_records_' . now()->format('Y-m-d') . '.xlsx"',
-        ];
-        
-        // Using the same logic as CSV export for now
-        // In a real implementation, you would use a library like PhpSpreadsheet
-        $callback = function() use ($appointments) {
-            $file = fopen('php://output', 'w');
-            
-            // Add headers
-            fputcsv($file, [
-                'Date', 
-                'Patient Name', 
-                'Appointment Time', 
-                'Check-In Time', 
-                'Check-Out Time', 
-                'Travel Time (minutes)',
-                'Location'
-            ]);
-            
-            // Add data
-            foreach ($appointments as $appointment) {
-                fputcsv($file, [
-                    Carbon::parse($appointment->appointment_date)->format('Y-m-d'),
-                    $appointment->patient->user->name,
-                    Carbon::parse($appointment->appointment_date)->format('g:i A'),
-                    Carbon::parse($appointment->check_in_time)->format('g:i A'),
-                    Carbon::parse($appointment->check_out_time)->format('g:i A'),
-                    $appointment->travel_time_minutes,
-                    $appointment->patient->user->address->ville . ', ' . $appointment->patient->user->address->rue
-                ]);
-            }
-            
-            fclose($file);
-        };
-        
-        return response()->stream($callback, 200, $headers);
+        return Excel::download(new TravelRecordsExport(), 'travel_records_' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    /**
+     * Export all appointments to Excel
+     */
+    public function exportAppointments()
+    {
+        return Excel::download(new AppointmentsExport(), 'my_appointments_' . now()->format('Y-m-d') . '.xlsx');
     }
 
     /**
@@ -814,6 +790,38 @@ class DoctorController extends Controller
         }
         
         return response()->json($events);
+    }
+
+    /**
+     * Print appointments in a professional format
+     */
+    public function printAppointments()
+    {
+        // Increase execution time limit for PDF generation
+        ini_set('max_execution_time', 300);
+        set_time_limit(300);
+        
+        $doctor_id = Auth::user()->doctor->id;
+        $appointments = Appointment::where('doctor_id', $doctor_id)
+            ->with(['patient.user', 'schedule'])
+            ->orderBy('appointment_date', 'desc')
+            ->get();
+
+        // Pass the logo path to the view
+        $logoPath = public_path('img/app-logo.png');
+        
+        $pdf = PDF::loadView('exports.appointments-print', compact('appointments', 'logoPath'));
+        $pdf->setPaper('a4');
+        
+        return $pdf->stream('my_appointments_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Export patients list to Excel
+     */
+    public function exportPatients()
+    {
+        return Excel::download(new DoctorPatientsExport(), 'my_patients_' . now()->format('Y-m-d') . '.xlsx');
     }
 
 }

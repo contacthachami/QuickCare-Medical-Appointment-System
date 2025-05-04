@@ -13,6 +13,9 @@
         <h2 class="mb-9 font-semibold text-xl text-gray-800 leading-tight dark:text-white">
             <span class="mr-2"><i class="fa-solid fa-user-doctor" style="color: #74C0FC;"></i> </span>
             {{ __('Doctors') }}
+            <a href="{{ route('patient.my.ratings') }}" class="text-blue-500 hover:text-blue-700 text-sm ml-4">
+                <i class="fa-solid fa-star mr-1" style="color: #74C0FC;"></i>View My Ratings
+            </a>
         </h2>
         <div class="mb-4">
             <label for="select-speciality" class="block text-gray-700 text-sm font-bold mb-2 dark:text-white">Choose a
@@ -73,9 +76,18 @@
                                 {{ $doctor->user->name }}</h3>
                             <p class="text-gray-700 dark:text-gray-400">{{ $doctor->speciality->name }}</p>
                             <div class="flex items-center mt-4">
-                                <span class="mr-2"><i class="fa-solid fa-star" style="color: #29a2ff;"></i></span>
-                                <span>{{ $doctor->avg_rating }}</span>
-                                <span class="ml-2">Review ({{ $doctor->ratings->count() }})</span>
+                                <div class="flex text-yellow-500">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        @if ($i <= floor($doctor->avg_rating))
+                                            <i class="fa-solid fa-star"></i>
+                                        @elseif ($i - 0.5 <= $doctor->avg_rating)
+                                            <i class="fa-solid fa-star-half-stroke"></i>
+                                        @else
+                                            <i class="fa-regular fa-star"></i>
+                                        @endif
+                                    @endfor
+                                </div>
+                                <span class="ml-2 text-gray-700 dark:text-gray-400">{{ number_format($doctor->avg_rating, 1) }} ({{ $doctor->ratings->count() }})</span>
                             </div>
                         </div>
 
@@ -155,7 +167,7 @@
                     let address = doctor.user && doctor.user.address && doctor.user.address.ville &&
                         doctor.user.address.rue ?
                         `${doctor.user.address.ville}, ${doctor.user.address.rue}` : 'Unknown';
-                    const doctorElement = `
+                    let doctorElement = `
                 <div id="doctor-${doctor.id}" class="bg-white dark:bg-dark-eval-2 shadow-md rounded-lg overflow-hidden flex flex-col transform transition duration-300 hover:scale-105">
                     <div class="p-4 flex flex-row">
                         <div class="mr-3">
@@ -169,9 +181,21 @@
                             </h3>
                             <p class="text-gray-700 dark:text-gray-400">${specialityName}</p>
                             <div class="flex items-center mt-4">
-                                <span class="mr-2"><i class="fa-solid fa-star" style="color: #29a2ff;"></i></span>
-                                <span>${doctor.avg_rating}</span>
-                                <span class="ml-2">Review (${doctor.ratings ? doctor.ratings.length : 0})</span>
+                                <div class="flex text-yellow-500">`;
+                    
+                    // Generate stars based on rating
+                    for (let i = 1; i <= 5; i++) {
+                        if (i <= Math.floor(doctor.avg_rating)) {
+                            doctorElement += `<i class="fa-solid fa-star"></i>`;
+                        } else if (i - 0.5 <= doctor.avg_rating) {
+                            doctorElement += `<i class="fa-solid fa-star-half-stroke"></i>`;
+                        } else {
+                            doctorElement += `<i class="fa-regular fa-star"></i>`;
+                        }
+                    }
+                    
+                    doctorElement += `</div>
+                                <span class="ml-2 text-gray-700 dark:text-gray-400">${Number(doctor.avg_rating).toFixed(1)} (${doctor.ratings ? doctor.ratings.length : 0})</span>
                             </div>
                         </div>
                     </div>

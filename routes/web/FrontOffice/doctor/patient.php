@@ -14,6 +14,7 @@ Route::middleware(['auth', 'doctor'])->group(function () {
     Route::get('/doctor/patient/{id}', [DoctorController::class, 'patientView'])->name('doctor.CRUD.patient.view');
     Route::get('/doctor/patient/book/appointment/{id}', [DoctorController::class, 'bookAppointmentView'])->name('doctor.CRUD.patient.book');
     Route::post('/doctor/patient/book/appointment/{id}/submit', [DoctorController::class, 'book'])->name('doctor.patient.book.appointment.submit');
+    Route::get('/doctor/patients/export', [DoctorController::class, 'exportPatients'])->name('doctor.patients.export');
 
 
 });

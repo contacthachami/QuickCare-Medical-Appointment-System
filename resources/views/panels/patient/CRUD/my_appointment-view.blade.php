@@ -148,28 +148,53 @@
                     @php
                         $patient_id = Auth::user()->patient->id;
                         $doctor = $appointment->doctor;
+                        $existingRating = App\Models\Rating::where('doctor_id', $doctor->id)
+                            ->where('patient_id', $patient_id)
+                            ->first();
                     @endphp
+
+                    @if ($existingRating)
+                        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
+                            <p class="font-bold">You've already rated this doctor</p>
+                            <p>Your rating: 
+                                <span class="flex items-center mt-2">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        @if ($i <= $existingRating->rating)
+                                            <i class="fas fa-star text-yellow-500"></i>
+                                        @else
+                                            <i class="fas fa-star text-gray-300"></i>
+                                        @endif
+                                    @endfor
+                                    <span class="ml-2">{{ $existingRating->rating }}/5</span>
+                                </span>
+                            </p>
+                            <p class="mt-2">Your comment: {{ $existingRating->comment ?? 'No comment provided' }}</p>
+                            <p class="mt-2 text-sm">You can update your rating below if you'd like to change it.</p>
+                        </div>
+                    @endif
+
                     <form id="ratingForm"
                         action="{{ route('patient.doctor.rate', ['D_id' => $doctor->id, 'P_id' => $patient_id]) }}"
                         method="POST">
                         @csrf
                         <div class="flex items-center space-x-2">
                             <div class="rating">
-                                <input value="5" name="rating" id="star5" type="radio">
+                                <input value="5" name="rating" id="star5" type="radio" required {{ isset($existingRating) && $existingRating->rating == 5 ? 'checked' : '' }}>
                                 <label for="star5"></label>
-                                <input value="4" name="rating" id="star4" type="radio">
+                                <input value="4" name="rating" id="star4" type="radio" {{ isset($existingRating) && $existingRating->rating == 4 ? 'checked' : '' }}>
                                 <label for="star4"></label>
-                                <input value="3" name="rating" id="star3" type="radio">
+                                <input value="3" name="rating" id="star3" type="radio" {{ isset($existingRating) && $existingRating->rating == 3 ? 'checked' : '' }}>
                                 <label for="star3"></label>
-                                <input value="2" name="rating" id="star2" type="radio">
+                                <input value="2" name="rating" id="star2" type="radio" {{ isset($existingRating) && $existingRating->rating == 2 ? 'checked' : '' }}>
                                 <label for="star2"></label>
-                                <input value="1" name="rating" id="star1" type="radio">
+                                <input value="1" name="rating" id="star1" type="radio" {{ isset($existingRating) && $existingRating->rating == 1 ? 'checked' : '' }}>
                                 <label for="star1"></label>
                             </div>
+                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">(Please select a rating)</span>
                         </div>
 
                         <textarea name="comment" id="message" class="mt-4 w-full px-3 py-2 border rounded-md focus:outline-none"
-                            placeholder="Enter your message" cols="30" rows="5"></textarea>
+                            placeholder="Write your review about the doctor" cols="30" rows="5">{{ isset($existingRating) ? $existingRating->comment : '' }}</textarea>
 
 
                         <button type="submit"
@@ -186,12 +211,17 @@
 <script>
     $(document).ready(function() {
         const stars = $('input[name="rating"]');
-        const labels = $('label');
-        const messageArea = $('#messageResponse');
-        const csrfToken = $('meta[name="csrf-token"]').attr('content'); // Retrieve CSRF token value
+        const labels = $('.rating label');
+
+        // Initially highlight stars based on pre-selected rating
+        const checkedStar = $('input[name="rating"]:checked');
+        if (checkedStar.length > 0) {
+            const index = stars.index(checkedStar);
+            removeActive(index);
+        }
 
         stars.on('click', function() {
-            removeActive($(this).index());
+            removeActive(stars.index(this));
         });
 
         function removeActive(index) {
@@ -203,44 +233,5 @@
                 }
             });
         }
-
-        $('#ratingForm').on('submit', function(event) {
-            event.preventDefault(); // Prevent the default form submission
-            const selectedRating = $('input[name="rating"]:checked').val();
-            const comment = $('#message').val();
-
-            // Send the selectedRating and message to the server via AJAX
-            $.ajax({
-                url: $(this).attr('action'),
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken // Include CSRF token in the request headers
-                },
-                data: {
-                    rating: selectedRating,
-                    comment: comment
-                },
-                success: function(response) {
-                    console.log('Rating submitted successfully');
-                    // Update message area with success message
-                    messageArea.text('Rating submitted successfully').removeClass(
-                        'text-red-500').addClass('text-green-500');
-
-                    // Clear the form fields
-                    $('#ratingForm')[0].reset();
-
-                    // Hide success message after 3 seconds
-                    setTimeout(function() {
-                        messageArea.text('');
-                    }, 3000);
-                },
-                error: function(error) {
-                    console.error('Error submitting rating:', error);
-                    // Update message area with error message
-                    messageArea.text('Error submitting rating').removeClass(
-                        'text-green-500').addClass('text-red-500');
-                }
-            });
-        });
     });
 </script>

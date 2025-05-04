@@ -249,67 +249,71 @@
     <script src="{{ asset('js/fullcalendar/doctor_calendar.js') }}"></script>
     
     <script>
-        // Handle CSV export button click
-        document.getElementById('csvBtn').addEventListener('click', function() {
-            window.location.href = '{{ route("doctor.appointments") }}?travel=1&export=csv';
-        });
-        
-        // Handle Print button click
-        document.getElementById('printBtn').addEventListener('click', function() {
-            window.print();
-        });
-        
-        // Search functionality for appointments table
-        document.getElementById('appointmentSearch').addEventListener('keyup', function() {
-            filterTable();
-        });
-        
-        // Status filter
-        document.getElementById('statusFilter').addEventListener('change', function() {
-            filterTable();
-        });
-        
-        // Date filter
-        document.getElementById('dateFilter').addEventListener('change', function() {
-            filterTable();
-        });
-        
-        function filterTable() {
-            const searchValue = document.getElementById('appointmentSearch').value.toLowerCase();
-            const statusValue = document.getElementById('statusFilter').value;
-            const dateValue = document.getElementById('dateFilter').value;
-            const rows = document.querySelectorAll('#appointmentsTable tbody tr');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get references to filter and search elements
+            const searchInput = document.getElementById('appointmentSearch');
+            const statusFilter = document.getElementById('statusFilter');
+            const dateFilter = document.getElementById('dateFilter');
+            const csvBtn = document.getElementById('csvBtn');
             
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                let showRow = true;
-                
-                // Apply search filter
-                if (searchValue && !text.includes(searchValue)) {
-                    showRow = false;
-                }
-                
-                // Apply status filter
-                if (statusValue && showRow) {
-                    const statusCell = row.querySelector('td:nth-child(5)');
-                    if (!statusCell.textContent.includes(statusValue)) {
-                        showRow = false;
-                    }
-                }
-                
-                // Apply date filter (this is simplified - would need actual date parsing)
-                if (dateValue && showRow) {
-                    const dateCell = row.querySelector('td:nth-child(2)').textContent;
-                    const today = new Date().toLocaleDateString();
-                    
-                    if (dateValue === 'today' && !dateCell.includes(today)) {
-                        showRow = false;
-                    }
-                    // Additional date filtering logic would go here
-                }
-                
-                row.style.display = showRow ? '' : 'none';
+            // Apply filtering when inputs change
+            searchInput.addEventListener('input', filterAppointments);
+            statusFilter.addEventListener('change', filterAppointments);
+            dateFilter.addEventListener('change', filterAppointments);
+            
+            // Export CSV button click handler
+            csvBtn.addEventListener('click', function() {
+                window.open("{{ route('doctor.appointments.export') }}", "_blank");
             });
-        }
+            
+            // Export CSV function
+            function exportCSV() {
+                window.open("{{ route('doctor.appointments.export') }}", "_blank");
+            }
+            
+            // Print button click handler
+            document.getElementById('printBtn').addEventListener('click', function() {
+                window.open("{{ route('doctor.appointments.print') }}", "_blank");
+            });
+
+            // Filter function
+            function filterAppointments() {
+                const searchValue = searchInput.value.toLowerCase();
+                const statusValue = statusFilter.value;
+                const dateValue = dateFilter.value;
+                const rows = document.querySelectorAll('#appointmentsTable tbody tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    let showRow = true;
+                    
+                    // Apply search filter
+                    if (searchValue && !text.includes(searchValue)) {
+                        showRow = false;
+                    }
+                    
+                    // Apply status filter
+                    if (statusValue && showRow) {
+                        const statusCell = row.querySelector('td:nth-child(5)');
+                        if (!statusCell.textContent.includes(statusValue)) {
+                            showRow = false;
+                        }
+                    }
+                    
+                    // Apply date filter (this is simplified - would need actual date parsing)
+                    if (dateValue && showRow) {
+                        const dateCell = row.querySelector('td:nth-child(2)').textContent;
+                        const today = new Date().toLocaleDateString();
+                        
+                        if (dateValue === 'today' && !dateCell.includes(today)) {
+                            showRow = false;
+                        }
+                        // Additional date filtering logic would go here
+                    }
+                    
+                    row.style.display = showRow ? '' : 'none';
+                });
+            }
+        });
     </script>
 </x-doctor-layout>

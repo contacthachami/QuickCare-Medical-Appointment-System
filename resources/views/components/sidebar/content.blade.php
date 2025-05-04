@@ -1,4 +1,4 @@
-<x-perfect-scrollbar as="nav" aria-label="main" class="flex flex-col flex-1 gap-4 px-3 ">
+<x-perfect-scrollbar as="nav" aria-label="main" class="flex flex-col flex-1 gap-4 px-3">
 
     @if (auth()->user()->user_type === 'admin')
         <x-sidebar.link title="Dashboard" href="{{ route(auth()->user()->getDashboardRouteAttribute()) }}"
@@ -17,24 +17,20 @@
         <x-sidebar.link title="Dashboard" href="{{ route(auth()->user()->getDashboardRouteAttribute()) }}"
             :isActive="request()->routeIs(auth()->user()->getDashboardRouteAttribute())">
             <x-slot name="icon">
-                <i class="fa-solid fa-house"></i>
+                <i class="fa-solid fa-house transition-transform duration-300 transform group-hover:scale-110"></i>
             </x-slot>
         </x-sidebar.link>
     @endif
 
-
-    {{-- <x-sidebar.dropdown title="Buttons" :active="Str::startsWith(request()->route()->uri(), 'buttons')">
-        <x-slot name="icon">
-            <x-heroicon-o-view-grid class="flex-shrink-0 w-6 h-6" aria-hidden="true" />
-        </x-slot>
-
-        <x-sidebar.sublink title="Text button" href="{{ route('buttons.text') }}" :active="request()->routeIs('buttons.text')" />
-        <x-sidebar.sublink title="Icon button" href="{{ route('buttons.icon') }}" :active="request()->routeIs('buttons.icon')" />
-        <x-sidebar.sublink title="Text with icon" href="{{ route('buttons.text-icon') }}" :active="request()->routeIs('buttons.text-icon')" />
-    </x-sidebar.dropdown> --}}
-
-    <div x-transition x-show="isSidebarOpen || isSidebarHovered" class="text-sm text-gray-500">
+    <div x-transition x-show="isSidebarOpen || isSidebarHovered" class="text-sm text-gray-500 font-semibold uppercase tracking-wider mt-2 mb-1">
+        @if (auth()->user()->user_type === 'doctor')
+        <div class="flex items-center">
+            <div class="w-1 h-4 bg-blue-500 rounded-r-full mr-2"></div>
+            <span>Medical Services</span>
+        </div>
+        @else
         Links
+        @endif
     </div>
     @if (auth()->user()->user_type === 'admin')
         <x-sidebar.link title="Doctors" href="{{ route('admin.doctor') }}" :isActive="request()->routeIs('admin.doctor')">
@@ -85,6 +81,12 @@
                 <i class="fa-regular fa-calendar-check"></i>
             </x-slot>
         </x-sidebar.link>
+        <x-sidebar.link title="My Ratings" href="{{ route('patient.my.ratings') }}"
+            :isActive="request()->routeIs('patient.my.ratings')">
+            <x-slot name="icon">
+                <i class="fa-solid fa-star text-yellow-500"></i>
+            </x-slot>
+        </x-sidebar.link>
         <x-sidebar.link title="Health Articles" href="{{ route('patiens.health.tips.view', authUser()->patient->id) }}"
             :isActive="request()->routeIs('patiens.health.tips.view')">
             <x-slot name="icon">
@@ -102,27 +104,35 @@
     @if (auth()->user()->user_type === 'doctor')
         <x-sidebar.link title="Appointments" href="{{ route('doctor.appointments') }}" :isActive="request()->routeIs('doctor.appointments') && !request()->has('travel')">
             <x-slot name="icon">
-                <i class="fa-regular fa-calendar-check"></i>
+                <i class="fa-regular fa-calendar-check transition-transform duration-300 transform group-hover:scale-110 text-blue-500"></i>
             </x-slot>
         </x-sidebar.link>
         <x-sidebar.link title="Travel Tracking" href="{{ route('doctor.travel-tracking') }}" :isActive="request()->routeIs('doctor.travel-tracking') || (request()->routeIs('doctor.appointments') && request()->has('travel'))">
             <x-slot name="icon">
-                <i class="fa-solid fa-route"></i>
+                <i class="fa-solid fa-route transition-transform duration-300 transform group-hover:scale-110 text-indigo-500"></i>
             </x-slot>
         </x-sidebar.link>
         <x-sidebar.link title="Schedules" href="{{ route('doctor.schedule') }}" :isActive="request()->routeIs('doctor.schedule')">
             <x-slot name="icon">
-                <i class="fa-solid fa-calendar-days"></i>
+                <i class="fa-solid fa-calendar-days transition-transform duration-300 transform group-hover:scale-110 text-emerald-500"></i>
             </x-slot>
         </x-sidebar.link>
+        
+        <div x-transition x-show="isSidebarOpen || isSidebarHovered" class="text-sm text-gray-500 font-semibold uppercase tracking-wider mt-4 mb-1">
+            <div class="flex items-center">
+                <div class="w-1 h-4 bg-purple-500 rounded-r-full mr-2"></div>
+                <span>Patient Management</span>
+            </div>
+        </div>
+        
         <x-sidebar.link title="My patients" href="{{ route('doctor.mypatients') }}" :isActive="request()->routeIs('doctor.mypatients')">
             <x-slot name="icon">
-                <i class="fa-solid fa-bed-pulse"></i>
+                <i class="fa-solid fa-bed-pulse transition-transform duration-300 transform group-hover:scale-110 text-purple-500"></i>
             </x-slot>
         </x-sidebar.link>
         <x-sidebar.link title="My Ratings" href="{{ route('doctor.myreviews') }}" :isActive="request()->routeIs('doctor.myreviews')">
             <x-slot name="icon">
-                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star transition-transform duration-300 transform group-hover:scale-110 text-yellow-500"></i>
             </x-slot>
         </x-sidebar.link>
 

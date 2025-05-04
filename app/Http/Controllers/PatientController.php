@@ -3,26 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rating;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\Schedule;
+use App\Models\Appointment;
 use App\Models\Speciality;
+use App\Models\Schedule;
+use App\Models\EmergencyContact;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use App\Exports\PatientAppointmentsExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Log;
 use Stevebauman\Location\Facades\Location;
 use Geocoder\Provider\OpenStreetMap\OpenStreetMap;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
 use Geocoder\Provider\Nominatim\Nominatim;
 use App\Exports\AppointmentsExport;
-use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Log;
 
 class PatientController extends Controller
 {
@@ -312,7 +313,7 @@ class PatientController extends Controller
             $filename = 'Liste_Rendez_Vous_' . date('Y-m-d');
             
             // Utiliser la classe d'exportation pour générer un fichier Excel professionnel
-            return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\AppointmentsExport(), $filename . '.xlsx');
+            return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PatientAppointmentsExport(), $filename . '.xlsx');
             
         } catch (\Exception $e) {
             // Journaliser l'erreur
@@ -684,27 +685,85 @@ class PatientController extends Controller
             'comment' => 'nullable|string|max:255',
         ]);
 
-
         // Find the doctor and patient
         $doctor = Doctor::findOrFail($doctorId);
         $patient = Patient::findOrFail($patientId);
 
-        // Create a new rating
-        $rating = new Rating();
-        $rating->doctor_id = $doctor->id;
-        $rating->patient_id = $patient->id;
-        $rating->rating = $validatedData['rating'];
-        $rating->comment = $validatedData['comment'] ?? null; // If message is not provided, set it to null
-        $rating->save();
+        // Check if a rating already exists for this doctor/patient combination
+        $existingRating = Rating::where('doctor_id', $doctor->id)
+            ->where('patient_id', $patient->id)
+            ->first();
+
+        if ($existingRating) {
+            // Update existing rating
+            $existingRating->rating = $validatedData['rating'];
+            $existingRating->comment = $validatedData['comment'] ?? null;
+            $existingRating->save();
+            $rating = $existingRating;
+        } else {
+            // Create a new rating
+            $rating = new Rating();
+            $rating->doctor_id = $doctor->id;
+            $rating->patient_id = $patient->id;
+            $rating->rating = $validatedData['rating'];
+            $rating->comment = $validatedData['comment'] ?? null; // If message is not provided, set it to null
+            $rating->save();
+        }
 
         // Update the average rating for the doctor
         $ratings = Rating::where('doctor_id', $doctor->id)->pluck('rating');
         $avgRating = $ratings->isEmpty() ? 0 : $ratings->avg();
         $doctor->avg_rating = $avgRating;
         $doctor->save();
+        
         // Redirect back with success message
         return redirect()->back()->with('success', 'Rating submitted successfully');
     }
+    
+    public function myRatings()
+    {
+        $patient = Auth::user()->patient;
+        $ratings = Rating::where('patient_id', $patient->id)
+            ->with('doctor.user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        // Handle export requests
+        if (request()->has('export') && request()->get('export') === 'csv') {
+            return $this->exportRatingsCSV($ratings);
+        }
+            
+        return view('panels.patient.my_ratings', compact('ratings'));
+    }
+    
+    private function exportRatingsCSV($ratings)
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="my_ratings_' . date('Y-m-d') . '.csv"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $callback = function() use ($ratings) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Doctor', 'Rating', 'Comment', 'Date']);
+
+            foreach ($ratings as $rating) {
+                fputcsv($file, [
+                    $rating->doctor->user->name,
+                    $rating->rating,
+                    $rating->comment ?? 'No comment',
+                    $rating->created_at->format('Y-m-d')
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+    
     public function bookAppointment(Request $request, $D_ID, $P_ID)
     {
         $reason_for_appointment = $request->input('reason_for_appointment');

@@ -63,8 +63,8 @@
                         <p class="text-gray-700 dark:text-gray-400">{{ $doctor->speciality->name }}</p>
                         <div class="flex items-center mt-2 md:mt-4">
                             <span class="mr-2"><i class="fa-solid fa-star" style="color: #29a2ff;"></i></span>
-                            <span>{{ $doctor->avg_rating }}</span>
-                            <span class="ml-2">Review ({{ $doctor->ratings->count() }})</span>
+                            <span class="font-bold text-lg">{{ number_format($doctor->avg_rating, 1) }}</span>
+                            <span class="ml-2 text-sm">Rating ({{ $doctor->ratings->count() }} reviews)</span>
                         </div>
                     </div>
                 </div>

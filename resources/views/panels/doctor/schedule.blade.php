@@ -1,187 +1,308 @@
 <head>
-
     <title>Doctor's Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-
+    <style>
+        .schedule-card {
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+        .schedule-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .time-slot {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+        .time-slot:hover {
+            background-color: #f0f9ff;
+            border-color: #93c5fd;
+        }
+        .time-slot.selected {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+        .day-card {
+            border-radius: 10px;
+            border-top: 5px solid #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .schedule-time-card:hover .delete-btn {
+            opacity: 1;
+        }
+        input[type="date"] {
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+        /* Calendar customization */
+        .fc-event {
+            border-radius: 6px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+        .fc-toolbar-title {
+            font-size: 1.5rem !important;
+            font-weight: 600 !important;
+        }
+        .fc-button {
+            border-radius: 6px !important;
+            text-transform: uppercase !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.5px !important;
+        }
+    </style>
 </head>
 
 <x-doctor-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight flex items-center">
+                <i class="fa-regular fa-calendar text-blue-500 mr-2"></i>{{ __('Schedule Management') }}
+            </h2>
+            <div class="text-right">
+                <span class="text-sm text-gray-600">Current Date:</span>
+                <span class="ml-1 font-medium">{{ \Carbon\Carbon::now()->format('M d, Y') }}</span>
+            </div>
+        </div>
     </x-slot>
 
     <x-success-flash></x-success-flash>
     <x-error-flash></x-error-flash>
 
-    <div class="p-6 mb-2 overflow-hidden bg-white rounded-md shadow-md dark:bg-dark-eval-1">
-        <h2 class="mb-2 font-semibold text-xl text-gray-800 dark:text-white leading-tight">
-            {{ __('My Schedule') }}
+    <!-- View Mode Tabs -->
+    <div class="bg-white rounded-lg shadow-md mb-6 p-4">
+        <div class="flex border-b border-gray-200">
+            <button id="tab-list" class="px-4 py-2 tab-active font-medium text-sm">List View</button>
+            <button id="tab-calendar" class="px-4 py-2 text-gray-500 font-medium text-sm">Calendar View</button>
+            <button id="tab-add" class="px-4 py-2 text-gray-500 font-medium text-sm">Add Schedule</button>
+        </div>
+    </div>
+
+    <!-- List View -->
+    <div id="list-view" class="p-6 mb-2 overflow-hidden bg-white rounded-lg shadow-md">
+        <h2 class="mb-4 font-semibold text-xl text-gray-800 flex items-center">
+            <i class="fa-solid fa-list-ul text-blue-500 mr-2"></i>{{ __('My Schedule') }}
         </h2>
         @php
             $groupedSchedule = [];
             foreach ($schedule as $item) {
                 $groupedSchedule[$item->day][] = $item;
             }
+            
+            // Order days of the week correctly
+            $orderedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            $orderedGroupedSchedule = [];
+            foreach ($orderedDays as $day) {
+                if (isset($groupedSchedule[$day])) {
+                    $orderedGroupedSchedule[$day] = $groupedSchedule[$day];
+                }
+            }
+            $groupedSchedule = $orderedGroupedSchedule;
         @endphp
 
         @if (count($groupedSchedule) > 0)
-            <div class="p-6 mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach ($groupedSchedule as $day => $items)
-                    <div class="border border-gray-200 dark:border-gray-700 p-4 rounded-md">
-                        <p class="text-lg font-semibold text-gray-900 dark:text-gray-300">{{ ucfirst($day) }}</p>
-                        <div class="grid grid-cols-1 gap-4 mt-2">
+                    <div class="day-card border border-gray-100 bg-white p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold text-gray-800">{{ ucfirst($day) }}</h3>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">{{ count($items) }} slots</span>
+                        </div>
+                        <div class="space-y-3">
                             @foreach ($items as $item)
-                            <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-md shadow-md  ">
-                                <div class="text-xs text-gray-700 uppercase dark:text-gray-400"> <span
-                                        class="mr-2"><i class="fa-regular fa-clock"
-                                            style="color: #74C0FC;"></i></span>{{ $item->start }} --
-                                    {{ $item->end }}</div>
-                                @if($item->specific_date)
-                                <div class="text-xs text-gray-700 dark:text-gray-400 mt-1"> 
-                                    <span class="mr-2"><i class="fa-regular fa-calendar" style="color: #74C0FC;"></i></span>
-                                    {{ \Carbon\Carbon::parse($item->specific_date)->format('M d, Y') }}
+                                <div class="schedule-card schedule-time-card bg-gray-50 p-4 rounded-lg border border-gray-100 flex justify-between items-center">
+                                    <div>
+                                        <div class="flex items-center text-gray-700 font-medium">
+                                            <i class="fa-regular fa-clock text-blue-500 mr-2"></i>
+                                            {{ $item->start }} - {{ $item->end }}
+                                        </div>
+                                        @if($item->specific_date)
+                                            <div class="text-xs text-gray-500 mt-1 flex items-center">
+                                                <i class="fa-regular fa-calendar text-blue-500 mr-2"></i>
+                                                {{ \Carbon\Carbon::parse($item->specific_date)->format('M d, Y') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="delete-btn">
+                                        <form id="deleteForm_{{ $item->id }}" action="{{ route('doctor.schedule.delete', $item->id) }}" method="POST" style="display: none;">
+                                            @csrf
+                                            @method('DELETE')
+                                        </form>
+                                        <button type="button" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full"
+                                            onclick="confirmDelete({{ $item->id }})">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                @endif
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <form id="deleteForm_{{ $item->id }}"
-                                        action="{{ route('doctor.schedule.delete', $item->id) }}"
-                                        method="POST" style="display: none;">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
-                                    <button type="button" class="text-red-600 hover:text-red-900"
-                                        onclick="confirmDelete({{ $item->id }})">Delete</button>
-                                </td>
-                            </div>
                             @endforeach
-
                         </div>
                     </div>
                 @endforeach
             </div>
         @else
-            <div class="p-6 mt-6 text-center">
-                <p class="text-lg font-semibold text-gray-800 dark:text-white">No schedules available</p>
-                <!-- Add any additional design or message here to indicate no schedules -->
+            <div class="p-10 text-center bg-gray-50 rounded-lg">
+                <div class="text-blue-500 mb-3"><i class="fas fa-calendar-times fa-3x"></i></div>
+                <p class="text-lg font-semibold text-gray-800">No schedules available</p>
+                <p class="text-gray-500 mt-1">Add your availability using the "Add Schedule" tab</p>
+                <button id="add-schedule-btn" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-plus mr-2"></i>Add Schedule
+                </button>
             </div>
         @endif
     </div>
 
-    <div
-        class="overflow-x-auto rounded-md mt-7  p-6 bg-white text-dark-eval-1 shadow-md flex justify-center dark:bg-dark-eval-1">
-        <div id="calendar" class="w-full lg:w-3/4 xl:w-2/3"></div>
+    <!-- Calendar View -->
+    <div id="calendar-view" class="p-6 mb-6 overflow-hidden bg-white rounded-lg shadow-md" style="display: none;">
+        <h2 class="mb-4 font-semibold text-xl text-gray-800 flex items-center">
+            <i class="fa-regular fa-calendar-alt text-blue-500 mr-2"></i>{{ __('Calendar View') }}
+        </h2>
+        <div class="overflow-x-auto rounded-md">
+            <div id="calendar" class="w-full"></div>
+        </div>
     </div>
 
-
-    <div
-            class="p-3 mt-7 bg-white overflow-hidden sm:rounded-lg dark:bg-dark-eval-1 dark:text-gray-400 flex flex-row justify-center ">
-            <div class="p-6 mt-7 overflow-hidden bg-white rounded-md shadow-md dark:bg-dark-eval-1">
-                <p>Add Schedule</p>
-            </div>
-
-            <form action="{{ route('doctor.schedule.add', ['id' => $doctor->id]) }}" method="POST"
-                class="flex flex-col space-y-4  bg-white shadow-md rounded-lg p-6">
-                @csrf
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Day</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Start Time</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @php
-                            $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                        @endphp
-                        @foreach ($days as $day)
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">{{ ucfirst($day) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <input type="date" name="specific_date[{{ $day }}]" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" min="{{ date('Y-m-d') }}">
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap flex flex-wrap">
-                                    @for ($i = 8; $i <= 19; $i++)
-                                        <div class="flex items-center space-x-2 mb-2">
-                                            <input id="{{ $day }}_{{ $i }}" type="checkbox"
-                                                name="start_times[{{ $day }}][]"
-                                                value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}:00" class="hidden">
-                                            <label for="{{ $day }}_{{ $i }}"
-                                                class="text-sm text-gray-900 px-4 py-2 border border-gray-300 rounded-md cursor-pointer">{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}:00
-                                                - {{ str_pad($i, 2, '0', STR_PAD_LEFT) }}:30</label>
-                                        </div>
-                                    @endfor
-                                </td>
-                            </tr>
+    <!-- Add Schedule Form -->
+    <div id="add-form" class="p-6 mb-6 overflow-hidden bg-white rounded-lg shadow-md" style="display: none;">
+        <h2 class="mb-4 font-semibold text-xl text-gray-800 flex items-center">
+            <i class="fa-solid fa-plus text-blue-500 mr-2"></i>{{ __('Add Availability') }}
+        </h2>
+        
+        <form action="{{ route('doctor.schedule.add', ['id' => $doctor->id]) }}" method="POST" class="space-y-6">
+            @csrf
+            @php
+                $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                $timeSlots = [
+                    '08:00 - 08:30', '09:00 - 09:30', '10:00 - 10:30', '11:00 - 11:30', 
+                    '12:00 - 12:30', '13:00 - 13:30', '14:00 - 14:30', '15:00 - 15:30', 
+                    '16:00 - 16:30', '17:00 - 17:30', '18:00 - 18:30', '19:00 - 19:30'
+                ];
+            @endphp
+            
+            @foreach ($days as $day)
+                <div class="p-5 border border-gray-200 rounded-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-800 mb-2 sm:mb-0">{{ ucfirst($day) }}</h3>
+                        <div class="flex space-x-3 items-center">
+                            <label class="text-sm text-gray-600">Specific Date:</label>
+                            <input type="date" name="specific_date[{{ $day }}]" class="border border-gray-300 rounded-md" min="{{ date('Y-m-d') }}">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        @foreach ($timeSlots as $index => $timeSlot)
+                            @php
+                                $startTime = explode(' - ', $timeSlot)[0];
+                                $hour = explode(':', $startTime)[0];
+                            @endphp
+                            <div class="relative">
+                                <input id="{{ $day }}_{{ $hour }}" type="checkbox" name="start_times[{{ $day }}][]" value="{{ $startTime }}" class="sr-only time-slot-checkbox">
+                                <label for="{{ $day }}_{{ $hour }}" class="time-slot flex items-center justify-center p-2 border border-gray-300 rounded-md text-sm cursor-pointer hover:bg-blue-50 hover:border-blue-300">
+                                    {{ $timeSlot }}
+                                </label>
+                            </div>
                         @endforeach
-
-
-                    </tbody>
-                </table>
-                <button type="submit"
-                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Save
-                    Slots</button>
-            </form>
-
-        </div>
-
-
-
+                    </div>
+                </div>
+            @endforeach
+            
+            <div class="flex justify-end">
+                <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center">
+                    <i class="fas fa-save mr-2"></i> Save All Slots
+                </button>
+            </div>
+        </form>
+    </div>
 </x-doctor-layout>
-@include('includes.table')
+
 <script src="{{ asset('js/fullcalendar/doctor_schedules.js') }}"></script>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // Tab switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const listTab = document.getElementById('tab-list');
+        const calendarTab = document.getElementById('tab-calendar');
+        const addTab = document.getElementById('tab-add');
+        const listView = document.getElementById('list-view');
+        const calendarView = document.getElementById('calendar-view');
+        const addForm = document.getElementById('add-form');
+        const addScheduleBtn = document.getElementById('add-schedule-btn');
+        
+        if (addScheduleBtn) {
+            addScheduleBtn.addEventListener('click', function() {
+                showTab('add');
+            });
+        }
+        
+        function showTab(tab) {
+            // Reset all tabs and views
+            [listTab, calendarTab, addTab].forEach(t => t.classList.remove('tab-active'));
+            [listTab, calendarTab, addTab].forEach(t => t.classList.add('text-gray-500'));
+            [listView, calendarView, addForm].forEach(v => v.style.display = 'none');
+            
+            // Set active tab and view
+            if (tab === 'list') {
+                listTab.classList.add('tab-active');
+                listTab.classList.remove('text-gray-500');
+                listView.style.display = 'block';
+            } else if (tab === 'calendar') {
+                calendarTab.classList.add('tab-active');
+                calendarTab.classList.remove('text-gray-500');
+                calendarView.style.display = 'block';
+                // Trigger window resize to make sure calendar renders correctly
+                window.dispatchEvent(new Event('resize'));
+            } else if (tab === 'add') {
+                addTab.classList.add('tab-active');
+                addTab.classList.remove('text-gray-500');
+                addForm.style.display = 'block';
+            }
+        }
+        
+        listTab.addEventListener('click', () => showTab('list'));
+        calendarTab.addEventListener('click', () => showTab('calendar'));
+        addTab.addEventListener('click', () => showTab('add'));
+    });
+    
+    // Delete confirmation
     function confirmDelete(itemId) {
         Swal.fire({
-            title: 'Are you sure you want to delete this Schedule ?',
+            title: 'Delete Schedule?',
+            text: 'This action cannot be undone',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'No, cancel!',
-            reverseButtons: true
+            confirmButtonText: 'Yes, delete it',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            borderRadius: '10px',
         }).then((result) => {
             if (result.isConfirmed) {
-                // If confirmed, submit the specific form for the patient
                 document.getElementById('deleteForm_' + itemId).submit();
             }
         });
     }
-</script>
-
-<script>
-    document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    
+    // Time slot selection
+    document.querySelectorAll('.time-slot-checkbox').forEach((checkbox) => {
         checkbox.addEventListener('change', (event) => {
-            event.target.nextElementSibling.classList.toggle('bg-blue-500', checkbox.checked);
-            event.target.nextElementSibling.classList.toggle('text-white', checkbox.checked);
-        });
-    });
-</script>
-
-<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-{{--
-<script>
-    $(document).ready(function() {
-        $.ajax({
-            url: '{{ route('doctor.schedule', $doctor->id) }}',
-            type: 'GET',
-            data: {
-                doctor_id: '{{ $doctor->id }}'
-            },
-            success: function(response) {
-                var schedules = response.schedules;
-                for (var i = 0; i < schedules.length; i++) {
-                    var day = schedules[i].day.charAt(0).toLowerCase() + schedules[i].day.slice(1);
-                    var time = parseInt(schedules[i].start.split(':')[0]);
-                    $('input[id="' + day + '_' + time + '"]').prop('disabled', true);
-                }
+            const label = event.target.nextElementSibling;
+            if (checkbox.checked) {
+                label.classList.add('bg-blue-500', 'text-white', 'border-blue-600');
+                label.classList.remove('hover:bg-blue-50', 'hover:border-blue-300');
+            } else {
+                label.classList.remove('bg-blue-500', 'text-white', 'border-blue-600');
+                label.classList.add('hover:bg-blue-50', 'hover:border-blue-300');
             }
         });
     });
-</script> --}}
+</script>

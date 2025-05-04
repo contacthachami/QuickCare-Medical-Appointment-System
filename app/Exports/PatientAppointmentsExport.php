@@ -20,14 +20,14 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use Carbon\Carbon;
 
-class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle, ShouldAutoSize, WithProperties, WithColumnFormatting, WithCustomStartCell
+class PatientAppointmentsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle, ShouldAutoSize, WithProperties, WithColumnFormatting, WithCustomStartCell
 {
     protected $appointments;
     
     public function __construct()
     {
-        $this->appointments = Appointment::where('doctor_id', Auth::user()->doctor->id)
-            ->with(['patient.user', 'schedule'])
+        $this->appointments = Appointment::where('patient_id', Auth::user()->patient->id)
+            ->with(['doctor.user', 'schedule'])
             ->orderBy('appointment_date', 'desc')
             ->get();
     }
@@ -56,10 +56,10 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
         return [
             '#',
             'DATE',
-            'PATIENT',
+            'DOCTOR',
             'REASON',
             'STATUS', 
-            'TRAVEL'
+            'STARTING HOUR'
         ];
     }
 
@@ -73,25 +73,17 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
         $date = Carbon::parse($appointment->appointment_date)->format('M d, Y');
         $time = $appointment->schedule ? $appointment->schedule->start : Carbon::parse($appointment->appointment_date)->format('H:i:s');
         
-        // Format patient name and email
-        $patientName = $appointment->patient->user->name;
-        $patientEmail = $appointment->patient->user->email ?? 'No email';
-        
-        // Determine travel status/time
-        $travelStatus = "Not started";
-        if ($appointment->check_in_time && !$appointment->check_out_time) {
-            $travelStatus = "In progress";
-        } elseif ($appointment->check_in_time && $appointment->check_out_time) {
-            $travelStatus = $appointment->travel_time_minutes . " minutes";
-        }
+        // Format doctor name and specialty
+        $doctorName = $appointment->doctor->user->name;
+        $doctorSpecialty = $appointment->doctor->speciality ? $appointment->doctor->speciality->name : 'General';
         
         return [
             $appointment->id,
             $date . "\n" . $time,
-            $patientName . "\n" . $patientEmail,
+            $doctorName . "\n" . $doctorSpecialty,
             $appointment->reason,
             $appointment->status,
-            $travelStatus
+            $time
         ];
     }
 
@@ -122,7 +114,7 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
             'creator'        => 'QuickCare',
             'lastModifiedBy' => Auth::user()->name,
             'title'          => 'My Appointments',
-            'description'    => 'Doctor appointments exported from QuickCare',
+            'description'    => 'Patient appointments exported from QuickCare',
             'subject'        => 'Medical Appointments',
             'company'        => 'QuickCare',
         ];
@@ -163,10 +155,10 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
             ],
         ]);
         
-        // Add doctor info
+        // Add patient info
         $sheet->mergeCells('A3:F3');
-        $doctorName = Auth::user()->name;
-        $sheet->setCellValue('A3', 'Doctor: ' . $doctorName);
+        $patientName = Auth::user()->name;
+        $sheet->setCellValue('A3', 'Patient: ' . $patientName);
         $sheet->getStyle('A3')->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -196,7 +188,7 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => '000000'],
+                    'color' => ['rgb' => '4F81BD'],
                 ],
             ],
             'alignment' => [
@@ -204,122 +196,91 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
                 'vertical' => Alignment::VERTICAL_CENTER,
             ],
         ]);
+        
+        // Alternate row colors for data rows
+        for ($i = 6; $i <= $lastDataRow; $i++) {
+            $fillColor = ($i % 2 == 0) ? 'DCE6F1' : 'FFFFFF';
+            $sheet->getStyle('A' . $i . ':F' . $i)->applyFromArray([
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => $fillColor],
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'B8CCE4'],
+                    ],
+                ],
+            ]);
+        }
 
-        // Apply borders to all data cells
-        if ($lastDataRow > 5) {
-            $dataRows = 'A5:F' . $lastDataRow;
-            $sheet->getStyle($dataRows)->applyFromArray([
+        // Add borders to data cells
+        $sheet->getStyle('A5:F' . $lastDataRow)->applyFromArray([
             'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => 'CCCCCC'],
+                'outline' => [
+                    'borderStyle' => Border::BORDER_MEDIUM,
+                    'color' => ['rgb' => '4F81BD'],
                 ],
             ],
         ]);
+        
+        // Enable text wrapping for all data cells
+        $sheet->getStyle('A6:F' . $lastDataRow)->getAlignment()->setWrapText(true);
+        
+        // Set row height for data cells to accommodate multiple lines
+        for ($i = 6; $i <= $lastDataRow; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(40);
+        }
 
-            // Enable text wrapping for all data cells
-            $sheet->getStyle('A6:F' . $lastDataRow)->getAlignment()->setWrapText(true);
+        // Center ID and Status columns
+        $sheet->getStyle('A6:A' . $lastDataRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('E6:F' . $lastDataRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        
+        // Vertical align center for all cells
+        $sheet->getStyle('A6:F' . $lastDataRow)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+
+        // Apply color coding based on status
+        for ($i = 6; $i <= $lastDataRow; $i++) {
+            $status = $sheet->getCell('E' . $i)->getValue();
             
-            // Set row height for data cells to accommodate multiple lines
-            for ($i = 6; $i <= $lastDataRow; $i++) {
-                $sheet->getRowDimension($i)->setRowHeight(40);
-            }
-
-            // Center ID and Status columns
-            $sheet->getStyle('A6:A' . $lastDataRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('E6:F' . $lastDataRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            
-            // Vertical align center for all cells
-            $sheet->getStyle('A6:F' . $lastDataRow)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            // Apply color coding based on status
-            for ($i = 6; $i <= $lastDataRow; $i++) {
-                $status = $sheet->getCell('E' . $i)->getValue();
-                
-                if ($status == 'Approved') {
-                    $sheet->getStyle('E' . $i)->applyFromArray([
-                        'fill' => [
-                            'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'C6EFCE'], // Light green
-                        ],
-                        'font' => [
-                            'color' => ['rgb' => '006100'], // Dark green
-                        ],
-                    ]);
-                } elseif ($status == 'Pending') {
-                    $sheet->getStyle('E' . $i)->applyFromArray([
-                        'fill' => [
-                            'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'FFEB9C'], // Light yellow
-                        ],
-                        'font' => [
-                            'color' => ['rgb' => '9C5700'], // Dark orange
-                        ],
-                    ]);
-                } elseif ($status == 'Canceled' || $status == 'Expired') {
-                    $sheet->getStyle('E' . $i)->applyFromArray([
-                        'fill' => [
-                            'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'FFC7CE'], // Light red
-                        ],
-                        'font' => [
-                            'color' => ['rgb' => '9C0006'], // Dark red
-                        ],
-                    ]);
-                }
-                
-                // Color code travel status column
-                $travelStatus = $sheet->getCell('F' . $i)->getValue();
-                
-                if (strpos($travelStatus, 'minutes') !== false) {
-                $sheet->getStyle('F' . $i)->applyFromArray([
+            // Set color based on status
+            if ($status == 'Approved') {
+                $sheet->getStyle('E' . $i)->applyFromArray([
+                    'font' => [
+                        'color' => ['rgb' => '006100'],
+                    ],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'C6EFCE'], // Light green
-                    ],
-                    'font' => [
-                            'color' => ['rgb' => '006100'], // Dark green
+                        'startColor' => ['rgb' => 'C6EFCE'],
                     ],
                 ]);
-                } elseif ($travelStatus == 'In progress') {
-                $sheet->getStyle('F' . $i)->applyFromArray([
+            } elseif ($status == 'Pending') {
+                $sheet->getStyle('E' . $i)->applyFromArray([
+                    'font' => [
+                        'color' => ['rgb' => '9C5700'],
+                    ],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'BDD7EE'], // Light blue
-                    ],
-                    'font' => [
-                            'color' => ['rgb' => '1F4E78'], // Dark blue
+                        'startColor' => ['rgb' => 'FFEB9C'],
                     ],
                 ]);
-                } elseif ($travelStatus == 'Not started') {
-                $sheet->getStyle('F' . $i)->applyFromArray([
+            } elseif ($status == 'Cancelled' || $status == 'Canceled') {
+                $sheet->getStyle('E' . $i)->applyFromArray([
+                    'font' => [
+                        'color' => ['rgb' => '9C0006'],
+                    ],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['rgb' => 'FFEB9C'], // Light yellow
-                    ],
-                    'font' => [
-                            'color' => ['rgb' => '9C5700'], // Dark orange
+                        'startColor' => ['rgb' => 'FFC7CE'],
                     ],
                 ]);
             }
         }
-
-            // Apply alternating row colors (zebra striping)
-            for ($i = 6; $i <= $lastDataRow; $i++) {
-            if ($i % 2 == 0) {
-                $sheet->getStyle('A' . $i . ':F' . $i)->applyFromArray([
-                    'fill' => [
-                        'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => 'F9F9F9'],
-                    ],
-                ]);
-            }
-        }
-        }
-
-        // Add summary section at the bottom
+        
+        // Add summary after the data
         $summaryRow = $lastDataRow + 2;
-        $sheet->setCellValue('A' . $summaryRow, 'Summary');
+        $sheet->setCellValue('A' . $summaryRow, 'APPOINTMENT SUMMARY');
+        $sheet->mergeCells('A' . $summaryRow . ':F' . $summaryRow);
         $sheet->getStyle('A' . $summaryRow)->applyFromArray([
             'font' => [
                 'bold' => true,
@@ -332,10 +293,7 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
         $totalAppointments = $this->appointments->count();
         $approvedCount = $this->appointments->where('status', 'Approved')->count();
         $pendingCount = $this->appointments->where('status', 'Pending')->count();
-        $canceledCount = $this->appointments->where('status', 'Canceled')->count();
-        
-        // Calculate total travel time from completed appointments
-        $totalTravelTime = $this->appointments->sum('travel_time_minutes');
+        $canceledCount = $this->appointments->whereIn('status', ['Cancelled', 'Canceled'])->count();
         
         // Total appointments
         $summaryRow++;
@@ -361,12 +319,6 @@ class AppointmentsExport implements FromCollection, WithHeadings, WithMapping, W
         $sheet->setCellValue('B' . $summaryRow, $canceledCount);
         $sheet->getStyle('A' . $summaryRow)->applyFromArray(['font' => ['bold' => true]]);
         
-        // Total travel time
-        $summaryRow++;
-        $sheet->setCellValue('A' . $summaryRow, 'Total Travel Time:');
-        $sheet->setCellValue('B' . $summaryRow, floor($totalTravelTime / 60) . 'h ' . ($totalTravelTime % 60) . 'm (' . $totalTravelTime . ' minutes)');
-        $sheet->getStyle('A' . $summaryRow)->applyFromArray(['font' => ['bold' => true]]);
-
         return [];
     }
-}
+} 
