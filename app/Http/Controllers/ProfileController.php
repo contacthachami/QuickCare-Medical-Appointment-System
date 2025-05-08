@@ -38,31 +38,94 @@ class ProfileController extends Controller
     }
     public function img(Request $request)
     {
+        \Illuminate\Support\Facades\Log::info('Profile image upload attempt started', [
+            'user_id' => $request->user()->id,
+            'user_name' => $request->user()->name,
+            'user_type' => $request->user()->user_type
+        ]);
+
         // Validate the incoming request
         $request->validate([
-            'img' => 'required|image|mimes:jpeg,png,gif|max:2048', // Adjust the max file size as needed
+            'img' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // Increased max size to 5MB
         ]);
 
         // Check if the request has a file attached
-        if ($request->hasFile('img')) {
-            // Get the uploaded file
-            $image = $request->file('img');
+        if ($request->hasFile('img') && $request->file('img')->isValid()) {
+            try {
+                // Get the uploaded file
+                $image = $request->file('img');
+                
+                \Illuminate\Support\Facades\Log::info('Image validated', [
+                    'original_filename' => $image->getClientOriginalName(),
+                    'mime_type' => $image->getMimeType(),
+                    'size' => $image->getSize()
+                ]);
 
-            // Generate a unique filename for the image
-            $imageName = uniqid('profile_img_') . '.' . $image->getClientOriginalExtension();
+                // Generate a unique filename for the image
+                $imageName = uniqid('profile_img_') . '.' . $image->getClientOriginalExtension();
+                
+                \Illuminate\Support\Facades\Log::info('Generated image name', [
+                    'image_name' => $imageName
+                ]);
 
-            // Store the image in the public storage directory
-            $image->storeAs('public/profile_pictures', $imageName);
+                // Store the image in the public storage directory
+                $path = $image->storeAs('profile_pictures', $imageName, 'public');
+                
+                \Illuminate\Support\Facades\Log::info('Image stored', [
+                    'storage_path' => $path,
+                    'full_path' => storage_path('app/public/' . $path)
+                ]);
+                
+                // Make sure storage link is created
+                if (!file_exists(public_path('storage'))) {
+                    \Illuminate\Support\Facades\Artisan::call('storage:link');
+                    \Illuminate\Support\Facades\Log::info('Created storage link');
+                }
 
-            // Update the user's profile image path in the database
-            $request->user()->update(['img' => $imageName]);
+                // Check if the file was actually stored
+                if (!file_exists(storage_path('app/public/' . $path))) {
+                    throw new \Exception('Image file was not stored properly');
+                }
 
-            // Redirect back with success message
-            return redirect()->back()->with('status', 'Profile picture uploaded successfully.');
+                // Update the user's profile image path in the database
+                $user = $request->user();
+                $oldImage = $user->img;
+                $user->img = $imageName;
+                $user->save();
+                
+                \Illuminate\Support\Facades\Log::info('Profile image updated in database', [
+                    'old_image' => $oldImage,
+                    'new_image' => $imageName
+                ]);
+
+                // Remove old profile image if it exists
+                if ($oldImage && $oldImage !== $imageName) {
+                    $oldImagePath = storage_path('app/public/profile_pictures/' . $oldImage);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                        \Illuminate\Support\Facades\Log::info('Old image removed', [
+                            'path' => $oldImagePath
+                        ]);
+                    }
+                }
+
+                // Redirect back with success message
+                \Illuminate\Support\Facades\Log::info('Profile image update successful');
+                return redirect()->back()->with('status', 'profile-updated');
+            } catch (\Exception $e) {
+                // Log the error
+                \Illuminate\Support\Facades\Log::error('Profile image upload failed: ' . $e->getMessage(), [
+                    'exception' => $e,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                return redirect()->back()->with('error', 'Failed to upload profile picture: ' . $e->getMessage());
+            }
         }
 
         // If no file is attached or upload fails, redirect back with error message
-        return redirect()->back()->with('error', 'Failed to upload profile picture.');
+        \Illuminate\Support\Facades\Log::warning('No valid image file provided');
+        return redirect()->back()->with('error', 'Failed to upload profile picture. Please try again with a valid image.');
     }
     /**
      * Update the user's profile information.

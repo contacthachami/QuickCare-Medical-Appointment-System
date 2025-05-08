@@ -133,20 +133,27 @@
             <div class="p-8 flex items-center">
                 <div class="mr-12 doctor-avatar">
                     @php
-                        $user = Auth::user()->img;
-                        $name = Auth::user()->name;
+                        $user = Auth::user();
+                        $name = $user->name;
                         $nameParts = explode(' ', $name);
                         $firstName = $nameParts[0] ?? '';
                         $lastName = end($nameParts);
                         $initials = strtoupper(substr($firstName, 0, 1) . (count($nameParts) > 1 ? substr($lastName, 0, 1) : ''));
                     @endphp
-                    @if ($user)
-                        <img src="{{ asset('storage/profile_pictures/' . $user) }}" alt="Profile Picture"
-                            class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-full object-cover shadow-md border-4 border-white">
+                    
+                    @if(View::exists('components.profile-image'))
+                        <x-profile-image :user="$user" size="2xl" rounded="full" containerClass="shadow-md border-4 border-white" />
                     @else
-                        <div class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-full doctor-initials">
-                            <span class="text-4xl md:text-6xl">{{ $initials }}</span>
-                        </div>
+                        @if ($user->img)
+                            <div class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-full overflow-hidden shadow-md border-4 border-white">
+                                <img src="{{ asset('storage/profile_pictures/' . $user->img) }}" alt="Profile Picture"
+                                   class="w-full h-full object-cover object-center">
+                            </div>
+                        @else
+                            <div class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-full doctor-initials">
+                                <span class="text-4xl md:text-6xl">{{ $initials }}</span>
+                            </div>
+                        @endif
                     @endif
                 </div>
                 <div class="animate-slide-right" style="animation-delay: 0.2s;">
@@ -260,9 +267,11 @@
                                 <div class="flex items-center">
                                     <div class="mr-3">
                                         @if($appointment->patient->user->img)
-                                            <img src="{{ asset('storage/profile_pictures/' . $appointment->patient->user->img) }}" 
-                                                 alt="Patient" 
-                                                 class="w-10 h-10 rounded-full border-2 border-blue-200 object-cover">
+                                            <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-blue-200">
+                                                <img src="{{ asset('storage/profile_pictures/' . $appointment->patient->user->img) }}" 
+                                                     alt="Patient" 
+                                                     class="w-full h-full object-cover object-center">
+                                            </div>
                                         @else
                                             @php
                                                 $patientName = $appointment->patient->user->name;
@@ -508,9 +517,11 @@
                                 <div class="mb-2 flex items-center">
                                     <div class="mr-3">
                                         @if($appointment->patient->user->img)
-                                            <img src="{{ asset('storage/profile_pictures/' . $appointment->patient->user->img) }}" 
-                                                 alt="Patient" 
-                                                 class="w-10 h-10 rounded-full border-2 border-indigo-200 object-cover">
+                                            <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-blue-200">
+                                                <img src="{{ asset('storage/profile_pictures/' . $appointment->patient->user->img) }}" 
+                                                     alt="Patient" 
+                                                     class="w-full h-full object-cover object-center">
+                                            </div>
                                         @else
                                             @php
                                                 $patientName = $appointment->patient->user->name;

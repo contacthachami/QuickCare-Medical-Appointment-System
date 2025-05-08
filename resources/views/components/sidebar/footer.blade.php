@@ -20,22 +20,29 @@
         <div class="flex items-center p-2 rounded-lg bg-blue-50 dark:bg-gray-800">
             <div class="mr-3 relative">
                 @php
-                    $nameParts = explode(' ', Auth::user()->name);
+                    $docUser = Auth::user();
+                    $nameParts = explode(' ', $docUser->name);
                     $firstName = $nameParts[0] ?? '';
                     $lastName = end($nameParts);
                     $initials = strtoupper(substr($firstName, 0, 1) . (count($nameParts) > 1 ? substr($lastName, 0, 1) : ''));
                 @endphp
                 
-                @if(Auth::user()->img)
-                    <img src="{{ asset('storage/profile_pictures/' . Auth::user()->img) }}" alt="Profile" 
-                         class="w-10 h-10 rounded-full border-2 border-blue-200 dark:border-blue-800 object-cover">
+                @if(View::exists('components.profile-image'))
+                    <x-profile-image :user="$docUser" size="sm" rounded="full" containerClass="border-2 border-blue-200 dark:border-blue-800" />
                 @else
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" 
-                         style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); position: relative;">
-                        <!-- Highlight effect -->
-                        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 45%);"></div>
-                        <span class="text-white font-semibold text-sm relative z-10" style="text-transform: uppercase; letter-spacing: -0.5px;">{{ $initials }}</span>
-                    </div>
+                    @if($docUser->img)
+                        <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-blue-200 dark:border-blue-800">
+                            <img src="{{ asset('storage/profile_pictures/' . $docUser->img) }}" alt="Profile" 
+                                 class="w-full h-full object-cover object-center">
+                        </div>
+                    @else
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden" 
+                             style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); position: relative;">
+                            <!-- Highlight effect -->
+                            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 45%);"></div>
+                            <span class="text-white font-semibold text-sm relative z-10" style="text-transform: uppercase; letter-spacing: -0.5px;">{{ $initials }}</span>
+                        </div>
+                    @endif
                 @endif
                 <!-- Online indicator -->
                 <span class="absolute bottom-0 right-0 block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>

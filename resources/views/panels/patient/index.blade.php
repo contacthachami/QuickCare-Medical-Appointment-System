@@ -28,9 +28,11 @@
                         $initials = strtoupper(substr($firstName, 0, 1) . substr($lastName, 0, 1));
                     @endphp
                     @if($user)
-                        <img src="{{ asset('storage/profile_pictures/' . $user) }}"
-                            alt="Profile Picture"
-                            class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-2xl shadow-md animate__animated animate__fadeInLeft">
+                        <div class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-2xl overflow-hidden shadow-md animate__animated animate__fadeInLeft">
+                            <img src="{{ asset('storage/profile_pictures/' . $user) }}"
+                                alt="Profile Picture"
+                                class="w-full h-full object-cover object-center">
+                        </div>
                     @else
                         <div class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-2xl shadow-md bg-gray-200 flex items-center justify-center animate__animated animate__fadeInLeft user-initials">
                             <span class="text-4xl md:text-6xl font-bold text-gray-700">{{ $initials }}</span>
