@@ -123,7 +123,13 @@
                                             </div>
                                             <div class="bg-gray-50 p-3 rounded">
                                                 <p class="text-xs text-gray-500 uppercase">Avg Time</p>
-                                                <p class="text-lg font-semibold">{{ $stats['averageTravelTime'] }} min</p>
+                                                <p class="text-lg font-semibold">
+                                                    @if($stats['averageTravelTime'] >= 60)
+                                                        {{ floor($stats['averageTravelTime'] / 60) }}h {{ round($stats['averageTravelTime'] % 60) }}m
+                                                    @else
+                                                        {{ $stats['averageTravelTime'] }} min
+                                                    @endif
+                                                </p>
                                             </div>
                                         </div>
                                         
@@ -146,10 +152,20 @@
                                         
                                         <div class="flex items-center justify-between text-sm text-gray-600">
                                             <div>
-                                                <span class="font-medium">Min:</span> {{ $stats['minTravelTime'] }} min
+                                                <span class="font-medium">Min:</span> 
+                                                @if($stats['minTravelTime'] >= 60)
+                                                    {{ floor($stats['minTravelTime'] / 60) }}h {{ $stats['minTravelTime'] % 60 }}m
+                                                @else
+                                                    {{ $stats['minTravelTime'] }} min
+                                                @endif
                                             </div>
                                             <div>
-                                                <span class="font-medium">Max:</span> {{ $stats['maxTravelTime'] }} min
+                                                <span class="font-medium">Max:</span> 
+                                                @if($stats['maxTravelTime'] >= 60)
+                                                    {{ floor($stats['maxTravelTime'] / 60) }}h {{ $stats['maxTravelTime'] % 60 }}m
+                                                @else
+                                                    {{ $stats['maxTravelTime'] }} min
+                                                @endif
                                             </div>
                                         </div>
                                         
@@ -235,7 +251,11 @@
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                                         {{ $appointment->travel_time_minutes <= 30 ? 'bg-green-100 text-green-800' : 
                                                            ($appointment->travel_time_minutes <= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                                        {{ $appointment->travel_time_minutes }} minutes
+                                                        @if($appointment->travel_time_minutes >= 60)
+                                                            {{ floor($appointment->travel_time_minutes / 60) }}h {{ $appointment->travel_time_minutes % 60 }}m
+                                                        @else
+                                                            {{ $appointment->travel_time_minutes }} minutes
+                                                        @endif
                                                     </span>
                                                 </td>
                                             </tr>

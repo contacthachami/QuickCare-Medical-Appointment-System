@@ -24,7 +24,7 @@
         $temp = true;
     }
 @endphp
-<x-modal name="example-modal" :show="$temp" id="create_doctor_modal ">
+<x-modal name="add_doctor" :show="$temp" id="create_doctor_modal">
     <div class="items_to_hide flex justify-center error_modal">
         <div class="form_container bg-white dark:bg-gray-800 p-8 rounded-lg">
             <form action="{{ route('admin.doctor.add') }}" method="POST" class="form" id="form">
@@ -60,71 +60,25 @@
                 </div>
 
                 <div class="form_groups">
-                    @php
-                        // Hardcoded list of Moroccan cities
-                        $moroccanCities = [
-                            'Agadir',
-                            'Al Hoceima',
-                            'Asilah',
-                            'Azrou',
-                            'Beni Mellal',
-                            'Bouznika',
-                            'Casablanca',
-                            'Chefchaouen',
-                            'Dakhla',
-                            'El Jadida',
-                            'Errachidia',
-                            'Essaouira',
-                            'Fès',
-                            'Guelmim',
-                            'Ifrane',
-                            'Kénitra',
-                            'Khouribga',
-                            'Laâyoune',
-                            'Larache',
-                            'Marrakech',
-                            'Meknès',
-                            'Mohammedia',
-                            'Nador',
-                            'Ouarzazate',
-                            'Oujda',
-                            'Rabat',
-                            'Safi',
-                            'Salé',
-                            'Tangier',
-                            'Taroudant',
-                            'Taza',
-                            'Tétouan',
-                            'Tiznit',
-                        ];
-                    @endphp
-
                     <div class="form_group">
                         <label for="city" class="text-lg font-semibold">City:</label>
-                        <select name="city" id="city_input"
+                        <input type="text" name="city" id="city_input" value="{{ old('city') }}"
+                            placeholder="Enter Your City"
                             class="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:border-blue-500">
-                            <option value="" disabled selected>Select your city</option>
-                            @foreach ($moroccanCities as $city)
-                                <option value="{{ $city }}">{{ $city }}</option>
-                            @endforeach
-                        </select>
                         <div class="error_input text-red-500">
                             <span id="city_error" class="error_input_span"></span>
-
                             @error('city')
                                 <p>{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
-
                     <div class="form_group">
                         <label for="rue" class="text-lg font-semibold">Street:</label>
-                        <input type="text" name="rue" value="{{ old('rue') }}" id="rue_input"
+                        <input type="text" name="rue" id="rue_input" value="{{ old('rue') }}"
                             placeholder="Enter Your Street"
                             class="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:border-blue-500">
                         <div class="error_input text-red-500">
                             <span id="rue_error" class="error_input_span"></span>
-
                             @error('rue')
                                 <p>{{ $message }}</p>
                             @enderror

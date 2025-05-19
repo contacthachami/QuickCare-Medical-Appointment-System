@@ -21,9 +21,8 @@
             </div>
             <div class="AddDoc_container">
                 <p class="AddDoc">Add New Doctor</p>
-                <button x-on:click="$dispatch('open-modal', 'example-modal')" name="AddDoc" class="">Add
+                <button x-on:click="$dispatch('open-modal', 'add_doctor')" name="AddDoc" class="">Add
                     Doctor</button>
-                {{-- <button id="AddDoc" onclick="showModal()"> + Add New</button> --}}
             </div>
         </div>
     </div>
@@ -158,7 +157,7 @@
         </div>
 
     </div>
-    @include('modals.add_doctor')
+    @include('modals.add_doctor', ['specialities' => $specialities])
     @include('includes.table')
 </x-admin-layout>
 

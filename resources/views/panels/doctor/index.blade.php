@@ -556,7 +556,13 @@
                                     </div>
                                 @else
                                         <div class="mt-1 text-xs inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 status-pill">
-                                        <i class="fas fa-check-circle mr-1"></i> Travel completed ({{ $appointment->travel_time_minutes }} min)
+                                        <i class="fas fa-check-circle mr-1"></i> Travel completed (
+                                        @if($appointment->travel_time_minutes >= 60)
+                                            {{ floor($appointment->travel_time_minutes / 60) }}h {{ $appointment->travel_time_minutes % 60 }}m
+                                        @else
+                                            {{ $appointment->travel_time_minutes }} min
+                                        @endif
+                                        )
                                     </div>
                                 @endif
                             </div>

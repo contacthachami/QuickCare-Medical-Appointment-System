@@ -14,17 +14,16 @@ class UsersTableSeeder extends Seeder
      */
     public function run()
     {
-        // Create a sample user
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('admin2025'),
-            'user_type' => 'admin',
-            'gender' => 'male',
-            'phone' => '0123456789',
-        ]);
-
-        // Add more users as needed
-
+        // Create admin user if it doesn't exist
+        if (!User::where('email', 'admin@example.com')->exists()) {
+            User::create([
+                'name' => 'Admin',
+                'email' => 'admin@example.com',
+                'password' => Hash::make('admin2025'),
+                'user_type' => 'admin',
+                'gender' => 'male',
+                'phone' => '0123456789',
+            ]);
+        }
     }
 }

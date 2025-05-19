@@ -177,7 +177,13 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-xl font-bold text-green-600">{{ $appointment->travel_time_minutes }} min</span>
+                                <span class="text-xl font-bold text-green-600">
+                                    @if($appointment->travel_time_minutes >= 60)
+                                        {{ floor($appointment->travel_time_minutes / 60) }}h {{ $appointment->travel_time_minutes % 60 }}m
+                                    @else
+                                        {{ $appointment->travel_time_minutes }} min
+                                    @endif
+                                </span>
                                 <p class="text-sm text-gray-500">Total travel time</p>
                             </div>
                         </div>

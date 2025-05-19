@@ -8,4 +8,21 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        minify: "terser",
+        cssMinify: true,
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    alpine: ["alpinejs"],
+                    vendor: ["perfect-scrollbar"],
+                },
+            },
+        },
+    },
+    server: {
+        hmr: {
+            overlay: false,
+        },
+    },
 });

@@ -562,7 +562,11 @@ class DoctorController extends Controller
         
         $appointment->save();
         
-        return redirect()->back()->with('success', 'Check-out time recorded. Travel time: ' . $travelTimeMinutes . ' minutes.');
+        $travelTimeMessage = $travelTimeMinutes >= 60 
+            ? floor($travelTimeMinutes / 60) . 'h ' . ($travelTimeMinutes % 60) . 'm'
+            : $travelTimeMinutes . ' minutes';
+            
+        return redirect()->back()->with('success', 'Check-out time recorded. Travel time: ' . $travelTimeMessage . '.');
     }
 
     /**

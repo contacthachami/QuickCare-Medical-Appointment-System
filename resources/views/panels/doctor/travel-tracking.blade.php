@@ -291,7 +291,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($appointment->travel_time_minutes)
                                             <span class="font-semibold">
-                                                {{ $appointment->travel_time_minutes }} minutes
+                                                @if($appointment->travel_time_minutes >= 60)
+                                                    {{ floor($appointment->travel_time_minutes / 60) }}h {{ $appointment->travel_time_minutes % 60 }}m
+                                                @else
+                                                    {{ $appointment->travel_time_minutes }} minutes
+                                                @endif
                                             </span>
                                         @else
                                             <span class="text-gray-400">N/A</span>
